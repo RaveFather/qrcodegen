@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Generator – RF Online Tools</title>
+
+<!-- ADSENSE -->
+<meta name="google-adsense-account" content="ca-pub-6776252433902731">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
+
+<style>
+    body {
+        margin: 0;
+        background: #0f0f0f;
+        font-family: "Inter", sans-serif;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px 20px;
+    }
+
+    h1 {
+        font-size: 2.8rem;
+        background: linear-gradient(90deg, #00eaff, #008cff);
+        -webkit-background-clip: text;
+        color: transparent;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        opacity: 0.7;
+        margin-bottom: 40px;
+    }
+
+    .invoice-box {
+        width: 100%;
+        max-width: 900px;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 25px;
+    }
+
+    input, textarea {
+        width: 100%;
+        padding: 12px;
+        background: rgba(255,255,255,0.08);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        margin-bottom: 12px;
+        font-size: 1rem;
+    }
+
+    .row {
+        display: flex;
+        gap: 15px;
+    }
+
+    .row > div {
+        flex: 1;
+    }
+
+    table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 15px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 10px;
+        margin-bottom: 10px;
+        text-align: left;
+    }
+
+    button {
+        margin-top: 15px;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 1rem;
+        background: linear-gradient(90deg, #00eaff, #008cff);
+        color: #000;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        transform: translateY(-3px);
+        opacity: 0.85;
+    }
+
+    #addItem {
+        background: rgba(255,255,255,0.12);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    #addItem:hover {
+        background: rgba(255,255,255,0.18);
+    }
+
+    .totals-box {
+        margin-top: 25px;
+        text-align: right;
+        font-size: 1.2rem;
+        gap: 8px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    footer {
+        margin-top: 40px;
+        opacity: 0.6;
+        font-size: 0.9rem;
+    }
+</style>
+
+</head>
+<body>
+
+<h1>Invoice Generator</h1>
+<p class="subtitle">Create professional invoices instantly → Export as PDF</p>
+
+<div class="invoice-box" id="invoiceContent">
+
+    <div class="row">
+        <div>
+            <h3>Your Business</h3>
+            <input id="bizName" placeholder="Business Name">
+            <input id="bizAddress" placeholder="Address">
+            <input id="bizEmail" placeholder="Email">
+        </div>
+
+        <div>
+            <h3>Customer</h3>
+            <input id="custName" placeholder="Customer Name">
+            <input id="custAddress" placeholder="Address">
+            <input id="custEmail" placeholder="Email">
+        </div>
+    </div>
+
+    <div class="row">
+        <div>
+            <input id="invoiceNumber" placeholder="Invoice Number">
+        </div>
+        <div>
+            <input type="date" id="invoiceDate">
+        </div>
+        <div>
+            <input type="date" id="dueDate">
+        </div>
+    </div>
+
+    <h3>Items</h3>
+
+    <table id="itemsTable">
+        <thead>
+            <tr style="background:none;">
+                <th>Description</th>
+                <th style="width:120px;">Qty</th>
+                <th style="width:120px;">Price</th>
+                <th style="width:120px;">Total</th>
+                <th style="width:50px;"></th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <button id="addItem">+ Add Item</button>
+
+    <div class="totals-box">
+        <div>Subtotal: <span id="subtotal">0.00</span></div>
+        <div>
+            Tax (%): <input id="taxRate" value="15" style="width:80px; display:inline-block;">
+        </div>
+        <div>Total: <span id="grandTotal">0.00</span></div>
+    </div>
+
+    <h3>Notes</h3>
+    <textarea id="notes" placeholder="Additional information..."></textarea>
+
+</div>
+
+
+<button onclick="downloadPDF()">Download PDF</button>
+
+<footer>RF Online Tools – 100% browser based, nothing uploaded.</footer>
+
+<!-- LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+let itemsTable = document.querySelector("#itemsTable tbody");
+
+function addItem(description="", qty=1, price=0) {
+    let row = document.createElement("tr");
+
+    row.innerHTML = `
+        <td><input class="desc" value="${description}" placeholder="Item description"></td>
+        <td><input class="qty" type="number" min="1" value="${qty}"></td>
+        <td><input class="price" type="number" min="0" step="0.01" value="${price}"></td>
+        <td class="total">0.00</td>
+        <td><button onclick="this.parentNode.parentNode.remove(); calculateTotals();">X</button></td>
+    `;
+
+    itemsTable.appendChild(row);
+    row.querySelectorAll("input").forEach(i => i.addEventListener("input", calculateTotals));
+    calculateTotals();
+}
+
+document.getElementById("addItem").onclick = () => addItem();
+
+
+function calculateTotals() {
+    let subtotal = 0;
+
+    itemsTable.querySelectorAll("tr").forEach(row => {
+        let qty = parseFloat(row.querySelector(".qty").value) || 0;
+        let price = parseFloat(row.querySelector(".price").value) || 0;
+        let total = qty * price;
+        row.querySelector(".total").innerText = total.toFixed(2);
+        subtotal += total;
+    });
+
+    document.getElementById("subtotal").innerText = subtotal.toFixed(2);
+
+    let taxRate = parseFloat(document.getElementById("taxRate").value) || 0;
+    let totalWithTax = subtotal + (subtotal * (taxRate / 100));
+
+    document.getElementById("grandTotal").innerText = totalWithTax.toFixed(2);
+}
+
+document.getElementById("taxRate").addEventListener("input", calculateTotals);
+
+
+async function downloadPDF() {
+    const element = document.getElementById("invoiceContent");
+
+    const canvas = await html2canvas(element, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jspdf.jsPDF("p", "mm", "a4");
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+
+    pdf.save("invoice.pdf");
+}
+
+// Add empty first item
+addItem();
+</script>
+
+</body>
+</html>
