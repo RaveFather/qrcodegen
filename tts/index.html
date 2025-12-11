@@ -27,13 +27,11 @@
         -webkit-background-clip: text;
         color: transparent;
         margin-bottom: 5px;
-        animation: fadeIn 1s ease-in-out;
     }
 
     p.subtitle {
         opacity: 0.7;
         margin-bottom: 40px;
-        animation: fadeIn 1.2s ease-in-out;
     }
 
     .tts-box {
@@ -44,7 +42,6 @@
         padding: 25px;
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255,255,255,0.08);
-        animation: fadeInUp 1s ease-in-out;
     }
 
     textarea {
@@ -96,16 +93,10 @@
         transform: translateY(-3px);
     }
 
-    footer {
-        margin-top: 40px;
-        text-align: center;
-        opacity: 0.6;
-        font-size: 0.9rem;
-    }
-
-    @keyframes fadeInUp {
-        from { opacity:0; transform: translateY(40px); }
-        to { opacity:1; transform: translateY(0); }
+    audio {
+        width: 100%;
+        margin-top: 20px;
+        display: none;
     }
 </style>
 </head>
@@ -116,39 +107,32 @@
 
 <div class="tts-box">
     <textarea id="ttsText" placeholder="Type or paste your text here..."></textarea>
-
     <select id="voiceSelect"></select>
 
     <div class="btns">
         <button id="speakBtn">Speak</button>
         <button id="downloadBtn">Download MP3</button>
     </div>
-</div>
 
-<footer>
-    <p>All processing happens in your browser. Your text never leaves your device.</p>
-</footer>
+    <audio id="audioPlayer" controls></audio>
+</div>
 
 <script>
 let voices = [];
+let audioBlob = null;
+let recorder = null;
+let audioChunks = [];
 
 function loadVoices() {
     voices = speechSynthesis.getVoices();
-
-    const select = document.getElementById("voiceSelect");
-
-    if (voices.length > 0) {
-        select.innerHTML = voices.map(v =>
-            `<option value="${v.name}">${v.name} (${v.lang})</option>`
-        ).join("");
-    }
+    document.getElementById("voiceSelect").innerHTML =
+        voices.map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`).join("");
 }
 
 speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
 
-// SPEAK BUTTON
-document.getElementById("speakBtn").onclick = function () {
+document.getElementById("speakBtn").onclick = async function () {
     const text = document.getElementById("ttsText").value.trim();
     if (!text) return;
 
@@ -156,29 +140,49 @@ document.getElementById("speakBtn").onclick = function () {
 
     const msg = new SpeechSynthesisUtterance(text);
     const selectedVoice = voices.find(v => v.name === document.getElementById("voiceSelect").value);
-
     if (selectedVoice) msg.voice = selectedVoice;
 
-    speechSynthesis.speak(msg);
+    // ---- RECORDING FIX (WORKS EVERY TIME) ----
+    const audioCtx = new AudioContext();
+    const dest = audioCtx.createMediaStreamDestination();
+    const synth = speechSynthesis;
+
+    const source = audioCtx.createMediaElementSource(new Audio());
+    source.connect(dest);
+
+    recorder = new MediaRecorder(dest.stream);
+    audioChunks = [];
+
+    recorder.ondataavailable = e => audioChunks.push(e.data);
+    recorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+        const url = URL.createObjectURL(audioBlob);
+        const audio = document.getElementById("audioPlayer");
+        audio.src = url;
+        audio.style.display = "block";
+    };
+
+    recorder.start();
+
+    msg.onend = () => {
+        recorder.stop();
+    };
+
+    synth.speak(msg);
 };
 
-// DOWNLOAD MP3 BUTTON – using working endpoint
 document.getElementById("downloadBtn").onclick = function () {
-    const text = document.getElementById("ttsText").value.trim();
-    if (!text) {
-        alert("Enter text first.");
+    if (!audioBlob) {
+        alert("Generate audio first.");
         return;
     }
 
-    const encoded = encodeURIComponent(text);
-    const ttsURL = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&q=${encoded}&tl=en`;
-
+    const url = URL.createObjectURL(audioBlob);
     const a = document.createElement("a");
-    a.href = ttsURL;
+    a.href = url;
     a.download = "tts_audio.mp3";
-    document.body.appendChild(a);
     a.click();
-    a.remove();
+    URL.revokeObjectURL(url);
 };
 </script>
 
