@@ -5,73 +5,108 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Text to Speech – RF Online Tools</title>
 
+<!-- ADSENSE -->
+<meta name="google-adsense-account" content="ca-pub-6776252433902731">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
+
 <style>
-    body { background:#0f0f0f; color:white; font-family:"Inter",sans-serif; display:flex; flex-direction:column; align-items:center; padding:40px; }
-    h1 { font-size:2.5rem; background:linear-gradient(90deg,#00eaff,#008cff); -webkit-background-clip:text; color:transparent; }
-    .box { width:100%; max-width:650px; padding:25px; background:rgba(255,255,255,0.05); border-radius:18px; }
-    textarea { width:100%; height:180px; padding:15px; border-radius:12px; background:rgba(255,255,255,0.08); color:white; border:none; resize:none; outline:none; }
-    select, button { width:100%; margin-top:15px; padding:14px; border-radius:12px; border:none; }
-    button { background:linear-gradient(90deg,#00eaff,#008cff); font-weight:700; cursor:pointer; color:black; }
-    audio { margin-top:20px; width:100%; }
+    body {
+        margin: 0;
+        background: #0f0f0f;
+        color: #fff;
+        font-family: Inter, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+    }
+    h1 {
+        font-size: 3rem;
+        background: linear-gradient(90deg,#00eaff,#008cff);
+        -webkit-background-clip: text;
+        color: transparent;
+        margin-bottom: 10px;
+    }
+    .tts-box {
+        width: 100%;
+        max-width: 700px;
+        padding: 25px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    textarea {
+        width: 100%;
+        height: 180px;
+        background: rgba(255,255,255,0.1);
+        border: none;
+        border-radius: 12px;
+        padding: 15px;
+        color: white;
+    }
+    button {
+        width: 100%;
+        padding: 15px;
+        margin-top: 15px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(90deg,#00eaff,#008cff);
+        color: #000;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    audio {
+        width: 100%;
+        margin-top: 20px;
+    }
 </style>
 </head>
 
 <body>
 
 <h1>Text to Speech</h1>
-<p>Type → Speak → Download MP3</p>
 
-<div class="box">
-    <textarea id="ttsText" placeholder="Type here..."></textarea>
+<div class="tts-box">
+    <textarea id="text" placeholder="Type something..."></textarea>
+    <button onclick="generateSpeech()">Generate Speech</button>
+    <button onclick="downloadAudio()">Download WAV</button>
 
-    <select id="voiceSelect">
-        <option value="alloy">Alloy (Male)</option>
-        <option value="verse">Verse (Female)</option>
-        <option value="impact">Impact (Deep)</option>
-    </select>
-
-    <button onclick="generateAudio()">Generate Audio</button>
-    <button onclick="downloadAudio()">Download MP3</button>
-
-    <audio id="audioPlayer" controls style="display:none;"></audio>
+    <audio id="player" controls style="display:none;"></audio>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@coqui-ai/tts@latest/dist/coqui-tts.min.js"></script>
+
 <script>
-let audioBlob = null;
+let generatedBlob = null;
 
-// Generate audio using OpenAI FREE browser TTS
-async function generateAudio() {
-    const text = document.getElementById("ttsText").value.trim();
-    const voice = document.getElementById("voiceSelect").value;
-    if (!text) return alert("Enter text!");
+async function generateSpeech() {
+    const text = document.getElementById("text").value.trim();
+    if (!text) return alert("Enter text first!");
 
-    const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            model: "gpt-4o-mini-tts",
-            input: text,
-            voice: voice,
-            format: "mp3"
-        })
+    const tts = new window.CoquiTTS.TTS({
+        modelUrl: "https://models.coqui.ai/tts/coqui-tts.v1.0.0.onnx",
+        vocoderUrl: "https://models.coqui.ai/vocoder/coqui-vocoder.onnx"
     });
 
-    const arrayBuffer = await response.arrayBuffer();
-    audioBlob = new Blob([arrayBuffer], { type: "audio/mp3" });
+    const audioArray = await tts.synthesize(text);
 
-    const audio = document.getElementById("audioPlayer");
+    // Convert to WAV Blob
+    generatedBlob = new Blob([audioArray.buffer], { type: "audio/wav" });
+
+    const url = URL.createObjectURL(generatedBlob);
+    const audio = document.getElementById("player");
+    audio.src = url;
     audio.style.display = "block";
-    audio.src = URL.createObjectURL(audioBlob);
+    audio.play();
 }
 
-// Download the MP3
 function downloadAudio() {
-    if (!audioBlob) return alert("Generate audio first!");
+    if (!generatedBlob) return alert("Generate speech first!");
 
-    const url = URL.createObjectURL(audioBlob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "tts.mp3";
+    a.href = URL.createObjectURL(generatedBlob);
+    a.download = "tts_output.wav";
     a.click();
 }
 </script>
