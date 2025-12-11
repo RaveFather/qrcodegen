@@ -1,123 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RF Online Tools – Free Simple Tools</title>
+
     <!-- GOOGLE VERIFICATION -->
     <meta name="google-adsense-account" content="ca-pub-6776252433902731">
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RF Online Tools – Free Online Utilities</title>
-
-    <!-- ADSENSE CODE -->
+    <!-- ADSENSE -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
         crossorigin="anonymous"></script>
 
     <style>
         body {
             margin: 0;
+            background: #0f0f0f;
             font-family: "Inter", sans-serif;
-            background: #f4f7fb;
-            color: #222;
-            animation: fadeIn 0.8s ease;
-        }
-
-        @keyframes fadeIn {
-            from {opacity: 0;}
-            to {opacity: 1;}
+            color: white;
+            overflow-x: hidden;
         }
 
         header {
             text-align: center;
-            padding: 70px 20px;
-            background: linear-gradient(135deg, #6b7cff, #00c2ff);
-            color: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 60px 20px;
+            animation: fadeIn 1s ease-in-out;
         }
 
-        header h1 {
-            font-size: 42px;
-            margin-bottom: 10px;
-            animation: slideDown 0.6s ease;
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #00eaff, #008cff);
+            -webkit-background-clip: text;
+            color: transparent;
         }
 
-        header p {
-            font-size: 18px;
-            opacity: 0.9;
-            animation: slideDown 0.9s ease;
-        }
-
-        @keyframes slideDown {
-            from {transform: translateY(-25px); opacity: 0;}
-            to {transform: translateY(0); opacity: 1;}
+        p.subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-top: -10px;
         }
 
         .tools-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
             padding: 40px;
-            max-width: 1200px;
-            margin: auto;
+            animation: fadeInUp 1s ease-in-out;
         }
 
         .tool-card {
-            background: white;
+            background: rgba(255, 255, 255, 0.05);
             padding: 25px;
             border-radius: 16px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            text-align: center;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            animation: popIn 0.5s ease;
-        }
-
-        @keyframes popIn {
-            from {transform: scale(0.9); opacity: 0;}
-            to {transform: scale(1); opacity: 1;}
+            text-decoration: none;
+            color: white;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: 0.3s;
         }
 
         .tool-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .tool-card h3 {
-            margin-top: 0;
-            font-size: 22px;
-            color: #333;
-        }
-
-        .tool-card p {
-            font-size: 15px;
-            color: #555;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 10px 18px;
-            background: #6b7cff;
-            color: white;
-            border-radius: 10px;
-            text-decoration: none;
-            transition: background 0.2s ease;
-        }
-
-        .btn:hover {
-            background: #596af7;
+            margin: 0;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
         }
 
         footer {
             text-align: center;
             padding: 30px;
+            font-size: 0.9rem;
+            opacity: 0.6;
             margin-top: 40px;
-            background: #eef2f8;
-            font-size: 14px;
-            color: #333;
+            line-height: 1.4;
         }
 
-        footer a {
-            color: #6b7cff;
-            text-decoration: none;
+        @keyframes fadeIn {
+            from { opacity:0; transform: translateY(20px); }
+            to { opacity:1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity:0; transform: translateY(40px); }
+            to { opacity:1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -125,55 +96,49 @@
 
 <header>
     <h1>RF Online Tools</h1>
-    <p>Free, fast, privacy-friendly online utilities. Ads help keep the site running 💙</p>
+    <p class="subtitle">Free, fast, simple tools – powered by ads to keep everything online.</p>
 </header>
 
 <div class="tools-grid">
 
-    <!-- QR Code -->
-    <div class="tool-card">
+    <!-- QR CODE GENERATOR -->
+    <a class="tool-card" href="/qrcode/">
         <h3>QR Code Generator</h3>
-        <p>Create custom QR codes instantly.</p>
-        <a class="btn" href="/qrcode/">Open Tool</a>
-    </div>
+        <p>Create instant QR codes for links, text, anything.</p>
+    </a>
 
-    <!-- PDF Compressor -->
-    <div class="tool-card">
+    <!-- PDF COMPRESSOR -->
+    <a class="tool-card" href="/pdfcompressor/">
         <h3>PDF Compressor</h3>
-        <p>Reduce PDF size without losing quality.</p>
-        <a class="btn" href="/pdfcompressor/">Open Tool</a>
-    </div>
+        <p>Shrink your PDF files without losing quality.</p>
+    </a>
 
-    <!-- Word to PDF -->
-    <div class="tool-card">
-        <h3>Word to PDF</h3>
-        <p>Convert any DOCX file into a PDF instantly.</p>
-        <a class="btn" href="/wordtopdf/">Open Tool</a>
-    </div>
+    <!-- WORD TO PDF -->
+    <a class="tool-card" href="/wordtopdf/">
+        <h3>Word → PDF</h3>
+        <p>Convert DOCX files to clean PDF format.</p>
+    </a>
 
-    <!-- Image Compressor -->
-    <div class="tool-card">
+    <!-- IMAGE COMPRESSOR -->
+    <a class="tool-card" href="/imagecompressor/">
         <h3>Image Compressor</h3>
-        <p>Shrink JPG/PNG images while keeping clarity.</p>
-        <a class="btn" href="/imgcompressor/">Open Tool</a>
-    </div>
+        <p>Reduce image size while keeping it crisp.</p>
+    </a>
 
-    <!-- YouTube Thumbnail Downloader -->
-    <div class="tool-card">
-        <h3>YouTube Thumbnail Downloader</h3>
-        <p>Download YouTube thumbnails in HD quality.</p>
-        <a class="btn" href="/youtube-thumbnail/">Open Tool</a>
-    </div>
+    <!-- IMAGE TO PDF (NEW TOOL ADDED AUTOMATICALLY) -->
+    <a class="tool-card" href="/image-to-pdf/">
+        <h3>Image → PDF</h3>
+        <p>Convert JPG/PNG images into a clean downloadable PDF.</p>
+    </a>
 
 </div>
 
 <footer>
-    <p>© 2025 RF Online Tools – All rights reserved.</p>
-    <p>This site uses ads to remain free for everyone. Thank you for supporting us.</p>
     <p>
-        <a href="#">Privacy Policy</a> •
-        <a href="#">Terms of Service</a> •
-        <a href="#">Ads Disclosure</a>
+        RF Online Tools is a free service.  
+        We show ads to keep the tools running — thanks for understanding.<br><br>
+        By using our site, you agree to our basic Terms & Privacy.  
+        We do not store your files; all processing happens in your browser.
     </p>
 </footer>
 
