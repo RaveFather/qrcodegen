@@ -1,33 +1,36 @@
-/* GLOBAL */
+/* Global */
 body {
     margin: 0;
-    padding: 0;
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #4b6cb7, #182848);
+    font-family: "Inter", sans-serif;
+    background: linear-gradient(135deg, #111, #222, #181818, #1A1A2E);
+    background-size: 300% 300%;
+    animation: gradientShift 12s ease infinite;
     color: white;
-    min-height: 100vh;
-    overflow-x: hidden;
 }
 
-/* HEADER */
-.hero {
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Header */
+header {
     text-align: center;
-    padding: 60px 20px;
-    animation: fadeIn 1.2s ease-out;
+    padding: 40px 20px;
 }
 
-.title {
+h1 {
     font-size: 3rem;
     font-weight: 800;
     margin-bottom: 10px;
 }
 
-.subtitle {
-    font-size: 1.2rem;
-    opacity: 0.9;
+p {
+    opacity: 0.8;
 }
 
-/* GRID */
+/* Tools Grid */
 .tools-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -37,52 +40,39 @@ body {
     margin: auto;
 }
 
-/* TOOL CARDS */
 .tool-card {
     display: block;
-    background: rgba(255, 255, 255, 0.12);
     padding: 25px;
-    border-radius: 18px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
     text-decoration: none;
     color: white;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    transition: transform .2s ease, box-shadow .2s ease, background .2s;
-    animation: slideUp 0.8s ease forwards;
-    opacity: 0;
+    transition: 0.25s ease;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .tool-card:hover {
-    transform: translateY(-10px) scale(1.03);
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    transform: translateY(-6px);
+    background: rgba(255,255,255,0.12);
 }
 
+/* Card Text */
 .tool-card h2 {
-    margin: 0 0 10px;
+    margin: 0 0 10px 0;
     font-size: 1.4rem;
+    font-weight: 700;
 }
 
-/* FOOTER */
-.footer {
+.tool-card p {
+    margin: 0;
+    opacity: 0.8;
+}
+
+/* Footer */
+footer {
     text-align: center;
-    padding: 30px;
-    opacity: 0.85;
-}
-
-.footer-links a {
-    color: white;
-    margin: 0 15px;
-    text-decoration: underline;
-}
-
-/* ANIMATIONS */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-15px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(25px); }
-    to { opacity: 1; transform: translateY(0); }
+    padding: 30px 20px;
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
