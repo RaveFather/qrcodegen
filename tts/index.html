@@ -27,68 +27,46 @@
 
 <div class="tts-box">
     <textarea id="ttsText" placeholder="Type text here..."></textarea>
-    <select id="voiceSelect"></select>
 
-    <button onclick="generateAudio()">Speak (Generate Audio)</button>
+    <select id="voiceSelect">
+        <option value="en-us">English (US)</option>
+        <option value="en-gb">English (UK)</option>
+        <option value="en-au">English (AU)</option>
+    </select>
+
+    <button onclick="generateAudio()">Generate Audio</button>
     <button onclick="downloadAudio()">Download MP3</button>
 
     <audio id="audioPlayer" controls style="display:none;"></audio>
 </div>
 
 <script>
-// ---- GLOBALS ----
-let voices = [];
 let audioBlob = null;
 
-// ---- LOAD VOICES ----
-function loadVoices() {
-    voices = speechSynthesis.getVoices();
-
-    const select = document.getElementById("voiceSelect");
-    select.innerHTML = voices
-        .map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`)
-        .join("");
-}
-speechSynthesis.onvoiceschanged = loadVoices;
-loadVoices();
-
-// ---- SPEAK + GENERATE WAV ----
 async function generateAudio() {
     const text = document.getElementById("ttsText").value.trim();
-    if (!text) return;
+    const lang = document.getElementById("voiceSelect").value;
 
-    speechSynthesis.cancel(); // reset
+    if (!text) {
+        alert("Enter text first!");
+        return;
+    }
 
-    const utter = new SpeechSynthesisUtterance(text);
-    const selected = voices.find(v => v.name === document.getElementById("voiceSelect").value);
-    if (selected) utter.voice = selected;
+    const url =
+        "https://api.voicerss.org/?key=9f20efcd0e0e4f6da745d8d1a5f9a5e1&hl=" +
+        lang +
+        "&src=" +
+        encodeURIComponent(text);
 
-    // ---- CREATE AUDIO CONTEXT TO CAPTURE SPEECH ----
-    const audioContext = new AudioContext();
-    const dest = audioContext.createMediaStreamDestination();
-    const recorder = new MediaRecorder(dest.stream);
-    const chunks = [];
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    audioBlob = new Blob([arrayBuffer], { type: "audio/mp3" });
 
-    recorder.ondataavailable = e => chunks.push(e.data);
-
-    recorder.onstop = () => {
-        audioBlob = new Blob(chunks, { type: "audio/wav" });
-        const url = URL.createObjectURL(audioBlob);
-
-        const audio = document.getElementById("audioPlayer");
-        audio.style.display = "block";
-        audio.src = url;
-    };
-
-    recorder.start();
-
-    const source = audioContext.createMediaStreamSource(dest.stream);
-    speechSynthesis.speak(utter);
-
-    utter.onend = () => recorder.stop();
+    const audio = document.getElementById("audioPlayer");
+    audio.style.display = "block";
+    audio.src = URL.createObjectURL(audioBlob);
 }
 
-// ---- DOWNLOAD MP3/WAV ----
 function downloadAudio() {
     if (!audioBlob) {
         alert("Generate audio first!");
@@ -98,9 +76,8 @@ function downloadAudio() {
     const url = URL.createObjectURL(audioBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "tts_audio.wav"; 
+    a.download = "tts.mp3";
     a.click();
-    URL.revokeObjectURL(url);
 }
 </script>
 
