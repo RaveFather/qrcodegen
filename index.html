@@ -3,62 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RaveFather Tools</title>
-    <link rel="stylesheet" href="style.css">
+    <title>RF Online Tools – Free Simple Tools</title>
+
+    <!-- GOOGLE VERIFICATION -->
+    <meta name="google-adsense-account" content="ca-pub-6776252433902731">
+
+    <!-- ADSENSE -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
+        crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            margin: 0;
+            background: #0f0f0f;
+            font-family: "Inter", sans-serif;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #00eaff, #008cff);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        p.subtitle {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-top: -10px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            animation: fadeInUp 1s ease-in-out;
+        }
+
+        .tool-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 16px;
+            text-decoration: none;
+            color: white;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: 0.3s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .tool-card h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            font-size: 0.9rem;
+            opacity: 0.6;
+            margin-top: 40px;
+            line-height: 1.4;
+        }
+
+        @keyframes fadeIn {
+            from { opacity:0; transform: translateY(20px); }
+            to { opacity:1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity:0; transform: translateY(40px); }
+            to { opacity:1; transform: translateY(0); }
+        }
+    </style>
 </head>
 <body>
 
 <header>
-    <h1>RaveFather Tools</h1>
-    <p>Fast, free and powerful online tools — image, PDF, video, audio & more.</p>
+    <h1>RF Online Tools</h1>
+    <p class="subtitle">Free, fast, simple tools – powered by ads to keep everything online.</p>
 </header>
 
 <div class="tools-grid">
 
-    <a href="image-compressor/" class="tool-card">
-        <h2>Image Compressor</h2>
-        <p>Reduce image size while keeping quality.</p>
+    <!-- 1. QR CODE GENERATOR -->
+    <a class="tool-card" href="/qrcode/">
+        <h3>QR Code Generator</h3>
+        <p>Create instant QR codes for links, text, anything.</p>
     </a>
 
-    <a href="image-to-pdf/" class="tool-card">
-        <h2>Image to PDF</h2>
-        <p>Convert multiple images into a single PDF.</p>
+    <!-- 2. PDF COMPRESSOR -->
+    <a class="tool-card" href="/pdfcompressor/">
+        <h3>PDF Compressor</h3>
+        <p>Shrink your PDF files without losing quality.</p>
     </a>
 
-    <a href="pdf-to-word/" class="tool-card">
-        <h2>PDF to Word</h2>
-        <p>Turn your PDF into an editable Word document.</p>
+    <!-- 3. PDF → WORD -->
+    <a class="tool-card" href="/pdf-to-word/">
+        <h3>PDF → Word</h3>
+        <p>Convert PDF files into editable Word format.</p>
     </a>
 
-    <a href="pdf-compressor/" class="tool-card">
-        <h2>PDF Compressor</h2>
-        <p>Shrink your PDF files instantly.</p>
+    <!-- 4. IMAGE COMPRESSOR -->
+    <a class="tool-card" href="/image-compressor/">
+        <h3>Image Compressor</h3>
+        <p>Reduce image size while keeping it crisp.</p>
     </a>
 
-    <a href="qrcodegen/" class="tool-card">
-        <h2>QR Code Generator</h2>
-        <p>Create custom QR codes in seconds.</p>
+    <!-- 5. IMAGE → PDF -->
+    <a class="tool-card" href="/image-to-pdf/">
+        <h3>Image → PDF</h3>
+        <p>Convert JPG/PNG images into a clean downloadable PDF.</p>
     </a>
 
-    <a href="video-to-audio/" class="tool-card">
-        <h2>Video to Audio</h2>
-        <p>Extract audio from videos instantly.</p>
+    <!-- 6. VIDEO → AUDIO -->
+    <a class="tool-card" href="/video-to-audio/">
+        <h3>Video → Audio</h3>
+        <p>Extract MP3/Audio from any MP4 video instantly.</p>
     </a>
 
-    <a href="yt-thumb/" class="tool-card">
-        <h2>YouTube Thumbnail Downloader</h2>
-        <p>Download any YouTube video thumbnail.</p>
+    <!-- 7. YOUTUBE THUMBNAIL DOWNLOADER -->
+    <a class="tool-card" href="/youtube-thumbnail/">
+        <h3>YouTube Thumbnail Downloader</h3>
+        <p>Download any YouTube video's full-quality thumbnail.</p>
     </a>
 
 </div>
 
 <footer>
-    <p>We display ads to keep this service free ❤️</p>
-    <a href="privacy.html">Privacy Policy</a> · 
-    <a href="terms.html">Terms</a> · 
-    <a href="ads.html">Ads Policy</a>
+    <p>
+        RF Online Tools is a free service.  
+        We show ads to keep the tools running — thanks for understanding.<br><br>
+        By using our site, you agree to our basic Terms & Privacy.  
+        We do not store your files; all processing happens in your browser.
+    </p>
 </footer>
 
-<script src="script.js"></script>
 </body>
 </html>
