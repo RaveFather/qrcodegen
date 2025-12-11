@@ -9,7 +9,7 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
         crossorigin="anonymous"></script>
 
-    <!-- PDF-LIB (Required for compression) -->
+    <!-- PDF-LIB -->
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
@@ -17,9 +17,16 @@
 <body>
     <div class="container">
         <h1>PDF Compressor</h1>
-        <p>Select a PDF and compress it instantly.</p>
+        <p>Select a PDF and choose your compression level.</p>
 
         <input type="file" id="pdfInput" accept="application/pdf">
+
+        <select id="compressionLevel">
+            <option value="low">Low Compression (Best Quality)</option>
+            <option value="medium">Medium Compression</option>
+            <option value="high">High Compression (Smallest File)</option>
+        </select>
+
         <button onclick="compressPDF()">Compress PDF</button>
 
         <p id="status"></p>
