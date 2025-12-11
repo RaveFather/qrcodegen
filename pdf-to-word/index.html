@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Word Converter</title>
+
+    <!-- ADSENSE -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
+        crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 30px;
+        }
+        #downloadBtn {
+            display: none;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        input {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>PDF to Word Converter</h1>
+    <p>Upload a PDF and convert it to a .docx file.</p>
+
+    <input type="file" id="upload" accept="application/pdf">
+
+    <button id="downloadBtn">Download Word File</button>
+
+    <!-- PDF.js for text extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+    <script>
+        const upload = document.getElementById("upload");
+        const downloadBtn = document.getElementById("downloadBtn");
+
+        upload.addEventListener("change", async () => {
+            const file = upload.files[0];
+            if (!file) return;
+
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+            let fullText = "";
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const strings = content.items.map(item => item.str).join(" ");
+                fullText += strings + "\n\n";
+            }
+
+            // convert extracted text into .docx using a Blob
+            const blob = new Blob(
+                [`<?xml version="1.0" encoding="UTF-8"?>\n${fullText}`],
+                { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }
+            );
+
+            const url = URL.createObjectURL(blob);
+
+            downloadBtn.style.display = "inline-block";
+            downloadBtn.onclick = () => {
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = file.name.replace(".pdf", ".docx");
+                a.click();
+            };
+        });
+    </script>
+</body>
+</html>
