@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Compressor</title>
+
+    <!-- ADSENSE -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
+        crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 30px;
+        }
+        input {
+            margin: 20px 0;
+        }
+        #downloadBtn {
+            display: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Image Compressor</h1>
+    <p>Upload an image to reduce its file size instantly.</p>
+
+    <input type="file" id="upload" accept="image/*">
+    <br>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <button id="downloadBtn">Download Compressed Image</button>
+
+    <script>
+        const upload = document.getElementById("upload");
+        const canvas = document.getElementById("canvas");
+        const downloadBtn = document.getElementById("downloadBtn");
+
+        upload.addEventListener("change", function () {
+            const file = upload.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+
+            reader.onload = function (e) {
+                const img = new Image();
+                img.src = e.target.result;
+
+                img.onload = function () {
+                    const ctx = canvas.getContext("2d");
+
+                    // Resize logic: reduce long side to 1000px if too big
+                    let width = img.width;
+                    let height = img.height;
+
+                    const maxSize = 1000;
+                    if (width > height && width > maxSize) {
+                        height *= maxSize / width;
+                        width = maxSize;
+                    } else if (height > width && height > maxSize) {
+                        width *= maxSize / height;
+                        height = maxSize;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // More compression
+                    const compressed = canvas.toDataURL("image/jpeg", 0.7);
+
+                    downloadBtn.style.display = "inline-block";
+                    downloadBtn.onclick = function () {
+                        const a = document.createElement("a");
+                        a.href = compressed;
+                        a.download = "compressed.jpg";
+                        a.click();
+                    };
+                };
+            };
+        });
+    </script>
+</body>
+</html>
