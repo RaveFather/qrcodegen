@@ -1,5 +1,6 @@
-function generateQR() {
-    let text = document.getElementById("text").value;
-    document.getElementById("qrcode").innerHTML = "";
-    new QRCode(document.getElementById("qrcode"), text);
-}
+document.addEventListener("DOMContentLoaded", () => {
+    const cards = document.querySelectorAll(".tool-card");
+    cards.forEach((card, i) => {
+        card.style.animationDelay = `${i * 0.12}s`;
+    });
+});
