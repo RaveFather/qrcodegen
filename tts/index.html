@@ -156,6 +156,9 @@ function speakText() {
     const text = document.getElementById("ttsText").value;
     if (!text.trim()) return;
 
+    // FIX → cancel previous speech so new requests work
+    speechSynthesis.cancel();
+
     const msg = new SpeechSynthesisUtterance(text);
     const selectedVoice = voices.find(v => v.name === document.getElementById("voiceSelect").value);
 
@@ -177,11 +180,8 @@ function downloadAudio() {
     const dest = new AudioContext().createMediaStreamDestination();
 
     const synth = window.speechSynthesis;
-    const audio = new Audio();
-    audio.srcObject = stream;
 
     const recorder = new MediaRecorder(dest.stream);
-
     recorder.ondataavailable = e => audioChunks.push(e.data);
 
     recorder.onstop = () => {
