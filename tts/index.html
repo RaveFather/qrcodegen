@@ -10,180 +10,98 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
 
 <style>
-    body {
-        margin: 0;
-        background: #0f0f0f;
-        font-family: "Inter", sans-serif;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 40px 20px;
-    }
-
-    h1 {
-        font-size: 2.5rem;
-        background: linear-gradient(90deg, #00eaff, #008cff);
-        -webkit-background-clip: text;
-        color: transparent;
-    }
-
-    p.subtitle {
-        opacity: 0.7;
-        margin-bottom: 40px;
-    }
-
-    .tts-box {
-        width: 100%;
-        max-width: 650px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 18px;
-        padding: 25px;
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255,255,255,0.08);
-    }
-
-    textarea {
-        width: 100%;
-        height: 180px;
-        padding: 15px;
-        border-radius: 12px;
-        background: rgba(255,255,255,0.08);
-        color: white;
-        resize: none;
-        outline: none;
-        border: none;
-    }
-
-    select {
-        width: 100%;
-        padding: 12px;
-        margin-top: 15px;
-        border-radius: 12px;
-        background: rgba(255,255,255,0.08);
-        color: white;
-        border: none;
-        outline: none;
-    }
-
-    .btns {
-        display: flex;
-        gap: 15px;
-        margin-top: 25px;
-    }
-
-    button {
-        flex: 1;
-        padding: 14px;
-        background: linear-gradient(90deg, #00eaff, #008cff);
-        border: none;
-        color: #000;
-        font-weight: 700;
-        border-radius: 12px;
-        cursor: pointer;
-    }
-
-    audio {
-        width: 100%;
-        margin-top: 25px;
-        display: none;
-    }
+    body { margin:0; background:#0f0f0f; font-family:"Inter",sans-serif; color:white; display:flex; flex-direction:column; align-items:center; padding:40px 20px; }
+    h1 { font-size:2.5rem; background:linear-gradient(90deg,#00eaff,#008cff); -webkit-background-clip:text; color:transparent; margin-bottom:5px; }
+    .tts-box { width:100%; max-width:650px; background:rgba(255,255,255,0.05); padding:25px; border-radius:18px; backdrop-filter:blur(8px); }
+    textarea { width:100%; height:180px; padding:15px; border-radius:12px; background:rgba(255,255,255,0.08); color:white; border:none; resize:none; outline:none; }
+    select, button { width:100%; margin-top:15px; padding:12px; border-radius:12px; border:none; }
+    button { background:linear-gradient(90deg,#00eaff,#008cff); color:black; font-weight:700; cursor:pointer; }
+    audio { width:100%; margin-top:20px; }
 </style>
 </head>
+
 <body>
 
 <h1>Text to Speech</h1>
-<p class="subtitle">Type text → Choose a voice → Generate audio → Download MP3</p>
+<p class="subtitle">Type → Speak → Download MP3</p>
 
 <div class="tts-box">
-    <textarea id="ttsText" placeholder="Type or paste your text here..."></textarea>
-
+    <textarea id="ttsText" placeholder="Type text here..."></textarea>
     <select id="voiceSelect"></select>
 
-    <div class="btns">
-        <button id="speakBtn">Speak</button>
-        <button id="downloadBtn">Download MP3</button>
-    </div>
+    <button onclick="generateAudio()">Speak (Generate Audio)</button>
+    <button onclick="downloadAudio()">Download MP3</button>
 
-    <audio id="audioPlayer" controls></audio>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
 </div>
 
 <script>
+// ---- GLOBALS ----
 let voices = [];
 let audioBlob = null;
-let recorder;
-let audioChunks = [];
 
+// ---- LOAD VOICES ----
 function loadVoices() {
     voices = speechSynthesis.getVoices();
-    document.getElementById("voiceSelect").innerHTML =
-        voices.map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`).join("");
-}
 
+    const select = document.getElementById("voiceSelect");
+    select.innerHTML = voices
+        .map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`)
+        .join("");
+}
 speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
 
-document.getElementById("speakBtn").onclick = async () => {
+// ---- SPEAK + GENERATE WAV ----
+async function generateAudio() {
     const text = document.getElementById("ttsText").value.trim();
     if (!text) return;
 
-    speechSynthesis.cancel();
-    audioBlob = null;  // reset old audio
+    speechSynthesis.cancel(); // reset
 
     const utter = new SpeechSynthesisUtterance(text);
-    const selectedVoice = voices.find(v => v.name === document.getElementById("voiceSelect").value);
-    if (selectedVoice) utter.voice = selectedVoice;
+    const selected = voices.find(v => v.name === document.getElementById("voiceSelect").value);
+    if (selected) utter.voice = selected;
 
-    // --- REAL FIX: capture system audio using Web Audio ---
-    const audioCtx = new AudioContext();
-    const dest = audioCtx.createMediaStreamDestination();
+    // ---- CREATE AUDIO CONTEXT TO CAPTURE SPEECH ----
+    const audioContext = new AudioContext();
+    const dest = audioContext.createMediaStreamDestination();
+    const recorder = new MediaRecorder(dest.stream);
+    const chunks = [];
 
-    const element = new Audio();
-    const elementSrc = audioCtx.createMediaElementSource(element);
-
-    elementSrc.connect(dest);
-    elementSrc.connect(audioCtx.destination);
-
-    const synth = speechSynthesis;
-    const originalSpeak = synth.speak;
-
-    const speakAudioURL = URL.createObjectURL(new Blob([new TextEncoder().encode(text)]));
-
-    element.src = speakAudioURL;
-
-    recorder = new MediaRecorder(dest.stream);
-    audioChunks = [];
-    recorder.ondataavailable = e => audioChunks.push(e.data);
+    recorder.ondataavailable = e => chunks.push(e.data);
 
     recorder.onstop = () => {
-        audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+        audioBlob = new Blob(chunks, { type: "audio/wav" });
         const url = URL.createObjectURL(audioBlob);
 
         const audio = document.getElementById("audioPlayer");
-        audio.src = url;
         audio.style.display = "block";
+        audio.src = url;
     };
 
     recorder.start();
-    element.play();
 
-    utter.onend = () => {
-        recorder.stop();
-    };
+    const source = audioContext.createMediaStreamSource(dest.stream);
+    speechSynthesis.speak(utter);
 
-    originalSpeak.call(synth, utter);
-};
+    utter.onend = () => recorder.stop();
+}
 
-document.getElementById("downloadBtn").onclick = () => {
-    if (!audioBlob) return alert("Generate audio first.");
+// ---- DOWNLOAD MP3/WAV ----
+function downloadAudio() {
+    if (!audioBlob) {
+        alert("Generate audio first!");
+        return;
+    }
 
     const url = URL.createObjectURL(audioBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "tts_audio.mp3";
+    a.download = "tts_audio.wav"; 
     a.click();
     URL.revokeObjectURL(url);
-};
+}
 </script>
 
 </body>
