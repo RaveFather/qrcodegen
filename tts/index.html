@@ -26,7 +26,6 @@
         background: linear-gradient(90deg, #00eaff, #008cff);
         -webkit-background-clip: text;
         color: transparent;
-        margin-bottom: 5px;
     }
 
     p.subtitle {
@@ -49,24 +48,22 @@
         height: 180px;
         padding: 15px;
         border-radius: 12px;
-        border: none;
         background: rgba(255,255,255,0.08);
         color: white;
-        font-size: 1rem;
         resize: none;
         outline: none;
+        border: none;
     }
 
     select {
         width: 100%;
-        margin-top: 15px;
         padding: 12px;
+        margin-top: 15px;
         border-radius: 12px;
         background: rgba(255,255,255,0.08);
         color: white;
         border: none;
         outline: none;
-        font-size: 1rem;
     }
 
     .btns {
@@ -84,18 +81,11 @@
         font-weight: 700;
         border-radius: 12px;
         cursor: pointer;
-        transition: 0.3s;
-        font-size: 1rem;
-    }
-
-    button:hover {
-        opacity: 0.8;
-        transform: translateY(-3px);
     }
 
     audio {
         width: 100%;
-        margin-top: 20px;
+        margin-top: 25px;
         display: none;
     }
 </style>
@@ -107,6 +97,7 @@
 
 <div class="tts-box">
     <textarea id="ttsText" placeholder="Type or paste your text here..."></textarea>
+
     <select id="voiceSelect"></select>
 
     <div class="btns">
@@ -120,7 +111,7 @@
 <script>
 let voices = [];
 let audioBlob = null;
-let recorder = null;
+let recorder;
 let audioChunks = [];
 
 function loadVoices() {
@@ -132,50 +123,59 @@ function loadVoices() {
 speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
 
-document.getElementById("speakBtn").onclick = async function () {
+document.getElementById("speakBtn").onclick = async () => {
     const text = document.getElementById("ttsText").value.trim();
     if (!text) return;
 
     speechSynthesis.cancel();
+    audioBlob = null;  // reset old audio
 
-    const msg = new SpeechSynthesisUtterance(text);
+    const utter = new SpeechSynthesisUtterance(text);
     const selectedVoice = voices.find(v => v.name === document.getElementById("voiceSelect").value);
-    if (selectedVoice) msg.voice = selectedVoice;
+    if (selectedVoice) utter.voice = selectedVoice;
 
-    // ---- RECORDING FIX (WORKS EVERY TIME) ----
+    // --- REAL FIX: capture system audio using Web Audio ---
     const audioCtx = new AudioContext();
     const dest = audioCtx.createMediaStreamDestination();
-    const synth = speechSynthesis;
 
-    const source = audioCtx.createMediaElementSource(new Audio());
-    source.connect(dest);
+    const element = new Audio();
+    const elementSrc = audioCtx.createMediaElementSource(element);
+
+    elementSrc.connect(dest);
+    elementSrc.connect(audioCtx.destination);
+
+    const synth = speechSynthesis;
+    const originalSpeak = synth.speak;
+
+    const speakAudioURL = URL.createObjectURL(new Blob([new TextEncoder().encode(text)]));
+
+    element.src = speakAudioURL;
 
     recorder = new MediaRecorder(dest.stream);
     audioChunks = [];
-
     recorder.ondataavailable = e => audioChunks.push(e.data);
+
     recorder.onstop = () => {
         audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
         const url = URL.createObjectURL(audioBlob);
+
         const audio = document.getElementById("audioPlayer");
         audio.src = url;
         audio.style.display = "block";
     };
 
     recorder.start();
+    element.play();
 
-    msg.onend = () => {
+    utter.onend = () => {
         recorder.stop();
     };
 
-    synth.speak(msg);
+    originalSpeak.call(synth, utter);
 };
 
-document.getElementById("downloadBtn").onclick = function () {
-    if (!audioBlob) {
-        alert("Generate audio first.");
-        return;
-    }
+document.getElementById("downloadBtn").onclick = () => {
+    if (!audioBlob) return alert("Generate audio first.");
 
     const url = URL.createObjectURL(audioBlob);
     const a = document.createElement("a");
