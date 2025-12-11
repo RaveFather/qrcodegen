@@ -5,109 +5,160 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Text to Speech – RF Online Tools</title>
 
-<!-- ADSENSE -->
-<meta name="google-adsense-account" content="ca-pub-6776252433902731">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
-
 <style>
     body {
         margin: 0;
         background: #0f0f0f;
-        color: #fff;
-        font-family: Inter, sans-serif;
+        font-family: "Inter", sans-serif;
+        color: white;
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 40px 20px;
     }
+
     h1 {
-        font-size: 3rem;
-        background: linear-gradient(90deg,#00eaff,#008cff);
+        font-size: 2.5rem;
+        background: linear-gradient(90deg, #00eaff, #008cff);
         -webkit-background-clip: text;
         color: transparent;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
+
     .tts-box {
         width: 100%;
-        max-width: 700px;
+        max-width: 650px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
         padding: 25px;
-        border-radius: 16px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.08);
     }
+
     textarea {
         width: 100%;
         height: 180px;
-        background: rgba(255,255,255,0.1);
-        border: none;
-        border-radius: 12px;
         padding: 15px;
+        border-radius: 12px;
+        border: none;
+        background: rgba(255,255,255,0.08);
         color: white;
-    }
-    button {
-        width: 100%;
-        padding: 15px;
-        margin-top: 15px;
-        border: none;
-        border-radius: 12px;
-        background: linear-gradient(90deg,#00eaff,#008cff);
-        color: #000;
         font-size: 1rem;
-        font-weight: bold;
-        cursor: pointer;
+        resize: none;
+        outline: none;
     }
+
+    .btns {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+    }
+
+    button {
+        flex: 1;
+        padding: 14px;
+        background: linear-gradient(90deg, #00eaff, #008cff);
+        border: none;
+        color: #000;
+        font-weight: 700;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: 0.3s;
+        font-size: 1rem;
+    }
+
+    button:hover {
+        opacity: 0.8;
+        transform: translateY(-3px);
+    }
+
     audio {
         width: 100%;
-        margin-top: 20px;
+        margin-top: 25px;
     }
 </style>
 </head>
-
 <body>
 
 <h1>Text to Speech</h1>
 
 <div class="tts-box">
-    <textarea id="text" placeholder="Type something..."></textarea>
-    <button onclick="generateSpeech()">Generate Speech</button>
-    <button onclick="downloadAudio()">Download WAV</button>
+    <textarea id="ttsText" placeholder="Type or paste your text..."></textarea>
 
-    <audio id="player" controls style="display:none;"></audio>
+    <select id="voiceSelect">
+        <option value="en-us">English (US)</option>
+        <option value="en-gb">English (UK)</option>
+        <option value="en-au">English (AUS)</option>
+        <option value="en-in">English (India)</option>
+        <option value="af-za">Afrikaans (South Africa)</option>
+        <option value="ar-sa">Arabic</option>
+        <option value="fr-fr">French</option>
+        <option value="de-de">German</option>
+        <option value="es-es">Spanish</option>
+    </select>
+
+    <div class="btns">
+        <button onclick="generateAudio()">Generate Audio</button>
+        <button onclick="downloadAudio()">Download MP3</button>
+    </div>
+
+    <audio id="audioPlayer" controls style="display:none;"></audio>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@coqui-ai/tts@latest/dist/coqui-tts.min.js"></script>
-
 <script>
-let generatedBlob = null;
+const API_KEY = "a36ed836165641ddbc3d44fe5afa8875";
+let lastAudioBlob = null;
 
-async function generateSpeech() {
-    const text = document.getElementById("text").value.trim();
-    if (!text) return alert("Enter text first!");
+async function generateAudio() {
+    const text = document.getElementById("ttsText").value.trim();
+    const lang = document.getElementById("voiceSelect").value;
 
-    const tts = new window.CoquiTTS.TTS({
-        modelUrl: "https://models.coqui.ai/tts/coqui-tts.v1.0.0.onnx",
-        vocoderUrl: "https://models.coqui.ai/vocoder/coqui-vocoder.onnx"
-    });
+    if (!text) {
+        alert("Please enter text first.");
+        return;
+    }
 
-    const audioArray = await tts.synthesize(text);
+    try {
+        const url =
+            `https://api.voicerss.org/?key=${API_KEY}&hl=${lang}&src=${encodeURIComponent(text)}&c=MP3`;
 
-    // Convert to WAV Blob
-    generatedBlob = new Blob([audioArray.buffer], { type: "audio/wav" });
+        const response = await fetch(url);
 
-    const url = URL.createObjectURL(generatedBlob);
-    const audio = document.getElementById("player");
-    audio.src = url;
-    audio.style.display = "block";
-    audio.play();
+        // If the API returns a TEXT error instead of audio
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("audio")) {
+            const errorText = await response.text();
+            alert("TTS Error: " + errorText);
+            return;
+        }
+
+        const audioData = await response.blob();
+        lastAudioBlob = audioData;
+
+        const audioUrl = URL.createObjectURL(audioData);
+        const player = document.getElementById("audioPlayer");
+        player.style.display = "block";
+        player.src = audioUrl;
+        player.play();
+
+    } catch (err) {
+        alert("Something went wrong generating audio.");
+        console.error(err);
+    }
 }
 
 function downloadAudio() {
-    if (!generatedBlob) return alert("Generate speech first!");
+    if (!lastAudioBlob) {
+        alert("Generate audio first!");
+        return;
+    }
 
+    const url = URL.createObjectURL(lastAudioBlob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(generatedBlob);
-    a.download = "tts_output.wav";
+    a.href = url;
+    a.download = "tts_audio.mp3";
     a.click();
+    URL.revokeObjectURL(url);
 }
 </script>
 
