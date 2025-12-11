@@ -96,11 +96,6 @@
         transform: translateY(-3px);
     }
 
-    audio {
-        width: 100%;
-        margin-top: 25px;
-    }
-
     footer {
         margin-top: 40px;
         text-align: center;
@@ -125,11 +120,9 @@
     <select id="voiceSelect"></select>
 
     <div class="btns">
-        <button onclick="speakText()">Speak</button>
-        <button onclick="downloadMP3()">Download MP3</button>
+        <button id="speakBtn">Speak</button>
+        <button id="downloadBtn">Download MP3</button>
     </div>
-
-    <audio id="audioPlayer" controls style="display:none;"></audio>
 </div>
 
 <footer>
@@ -141,22 +134,25 @@ let voices = [];
 
 function loadVoices() {
     voices = speechSynthesis.getVoices();
+
     const select = document.getElementById("voiceSelect");
 
-    select.innerHTML = voices.map(v =>
-        `<option value="${v.name}">${v.name} (${v.lang})</option>`
-    ).join("");
+    if (voices.length > 0) {
+        select.innerHTML = voices.map(v =>
+            `<option value="${v.name}">${v.name} (${v.lang})</option>`
+        ).join("");
+    }
 }
 
 speechSynthesis.onvoiceschanged = loadVoices;
 loadVoices();
 
 // SPEAK BUTTON
-function speakText() {
-    const text = document.getElementById("ttsText").value;
-    if (!text.trim()) return;
+document.getElementById("speakBtn").onclick = function () {
+    const text = document.getElementById("ttsText").value.trim();
+    if (!text) return;
 
-    speechSynthesis.cancel(); // allow reuse
+    speechSynthesis.cancel();
 
     const msg = new SpeechSynthesisUtterance(text);
     const selectedVoice = voices.find(v => v.name === document.getElementById("voiceSelect").value);
@@ -164,25 +160,26 @@ function speakText() {
     if (selectedVoice) msg.voice = selectedVoice;
 
     speechSynthesis.speak(msg);
-}
+};
 
-// WORKING MP3 DOWNLOAD (Google Translate TTS)
-function downloadMP3() {
-    const text = document.getElementById("ttsText").value;
-    if (!text.trim()) return alert("Enter text first.");
+// DOWNLOAD MP3 BUTTON – using working endpoint
+document.getElementById("downloadBtn").onclick = function () {
+    const text = document.getElementById("ttsText").value.trim();
+    if (!text) {
+        alert("Enter text first.");
+        return;
+    }
 
     const encoded = encodeURIComponent(text);
-
-    // use English for now (tl=en), can add voice selector later
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encoded}`;
+    const ttsURL = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&q=${encoded}&tl=en`;
 
     const a = document.createElement("a");
-    a.href = url;
+    a.href = ttsURL;
     a.download = "tts_audio.mp3";
     document.body.appendChild(a);
     a.click();
     a.remove();
-}
+};
 </script>
 
 </body>
