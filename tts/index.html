@@ -5,33 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Text to Speech – RF Online Tools</title>
 
-<!-- ADSENSE -->
-<meta name="google-adsense-account" content="ca-pub-6776252433902731">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
-
 <style>
-    body { margin:0; background:#0f0f0f; font-family:"Inter",sans-serif; color:white; display:flex; flex-direction:column; align-items:center; padding:40px 20px; }
-    h1 { font-size:2.5rem; background:linear-gradient(90deg,#00eaff,#008cff); -webkit-background-clip:text; color:transparent; margin-bottom:5px; }
-    .tts-box { width:100%; max-width:650px; background:rgba(255,255,255,0.05); padding:25px; border-radius:18px; backdrop-filter:blur(8px); }
+    body { background:#0f0f0f; color:white; font-family:"Inter",sans-serif; display:flex; flex-direction:column; align-items:center; padding:40px; }
+    h1 { font-size:2.5rem; background:linear-gradient(90deg,#00eaff,#008cff); -webkit-background-clip:text; color:transparent; }
+    .box { width:100%; max-width:650px; padding:25px; background:rgba(255,255,255,0.05); border-radius:18px; }
     textarea { width:100%; height:180px; padding:15px; border-radius:12px; background:rgba(255,255,255,0.08); color:white; border:none; resize:none; outline:none; }
-    select, button { width:100%; margin-top:15px; padding:12px; border-radius:12px; border:none; }
-    button { background:linear-gradient(90deg,#00eaff,#008cff); color:black; font-weight:700; cursor:pointer; }
-    audio { width:100%; margin-top:20px; }
+    select, button { width:100%; margin-top:15px; padding:14px; border-radius:12px; border:none; }
+    button { background:linear-gradient(90deg,#00eaff,#008cff); font-weight:700; cursor:pointer; color:black; }
+    audio { margin-top:20px; width:100%; }
 </style>
 </head>
 
 <body>
 
 <h1>Text to Speech</h1>
-<p class="subtitle">Type → Speak → Download MP3</p>
+<p>Type → Speak → Download MP3</p>
 
-<div class="tts-box">
-    <textarea id="ttsText" placeholder="Type text here..."></textarea>
+<div class="box">
+    <textarea id="ttsText" placeholder="Type here..."></textarea>
 
     <select id="voiceSelect">
-        <option value="en-us">English (US)</option>
-        <option value="en-gb">English (UK)</option>
-        <option value="en-au">English (AU)</option>
+        <option value="alloy">Alloy (Male)</option>
+        <option value="verse">Verse (Female)</option>
+        <option value="impact">Impact (Deep)</option>
     </select>
 
     <button onclick="generateAudio()">Generate Audio</button>
@@ -43,22 +39,23 @@
 <script>
 let audioBlob = null;
 
+// Generate audio using OpenAI FREE browser TTS
 async function generateAudio() {
     const text = document.getElementById("ttsText").value.trim();
-    const lang = document.getElementById("voiceSelect").value;
+    const voice = document.getElementById("voiceSelect").value;
+    if (!text) return alert("Enter text!");
 
-    if (!text) {
-        alert("Enter text first!");
-        return;
-    }
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            model: "gpt-4o-mini-tts",
+            input: text,
+            voice: voice,
+            format: "mp3"
+        })
+    });
 
-    const url =
-        "https://api.voicerss.org/?key=9f20efcd0e0e4f6da745d8d1a5f9a5e1&hl=" +
-        lang +
-        "&src=" +
-        encodeURIComponent(text);
-
-    const response = await fetch(url);
     const arrayBuffer = await response.arrayBuffer();
     audioBlob = new Blob([arrayBuffer], { type: "audio/mp3" });
 
@@ -67,11 +64,9 @@ async function generateAudio() {
     audio.src = URL.createObjectURL(audioBlob);
 }
 
+// Download the MP3
 function downloadAudio() {
-    if (!audioBlob) {
-        alert("Generate audio first!");
-        return;
-    }
+    if (!audioBlob) return alert("Generate audio first!");
 
     const url = URL.createObjectURL(audioBlob);
     const a = document.createElement("a");
