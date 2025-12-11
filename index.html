@@ -1,90 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- GOOGLE VERIFICATION -->
-    <meta name="google-adsense-account" content="ca-pub-6776252433902731">
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RF Online Tools</title>
 
-    <!-- ADSENSE CODE -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
-        crossorigin="anonymous"></script>
+    <!-- GOOGLE ADSENSE -->
+    <meta name="google-adsense-account" content="ca-pub-6776252433902731">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
 
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f4f4f4;
-            padding: 40px;
-            text-align: center;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
         }
 
-        h1 {
+        header {
+            background: #4b6cff;
+            padding: 40px 20px;
+            text-align: center;
+            color: white;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            animation: fadeIn 1.2s ease;
+        }
+
+        header h1 {
+            font-size: 36px;
             margin-bottom: 10px;
         }
 
-        p.subtitle {
-            margin-top: 0;
-            margin-bottom: 40px;
+        header p {
             font-size: 18px;
-            color: #555;
+            opacity: 0.9;
         }
 
-        .tool-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+        .tools {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 20px;
-            max-width: 900px;
-            margin: 0 auto;
+            padding: 30px;
+            max-width: 1100px;
+            margin: auto;
         }
 
-        .tool {
+        .tool-card {
             background: white;
-            padding: 20px;
-            width: 260px;
-            border-radius: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-            transition: 0.2s;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: 0.3s;
+            cursor: pointer;
+            animation: slideUp 0.8s ease forwards;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 7px 28px rgba(0,0,0,0.15);
+        }
+
+        .tool-card h3 {
+            margin-bottom: 10px;
             font-size: 20px;
         }
 
-        .tool:hover {
-            transform: scale(1.05);
+        footer {
+            text-align: center;
+            font-size: 14px;
+            padding: 30px;
+            margin-top: 40px;
+            color: #666;
         }
 
-        a {
+        footer a {
+            color: #4b6cff;
             text-decoration: none;
-            color: black;
-            font-weight: bold;
+            margin: 0 6px;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+
+        @keyframes slideUp {
+            from {opacity: 0; transform: translateY(40px);}
+            to {opacity: 1; transform: translateY(0);}
         }
     </style>
 </head>
+
 <body>
 
+<header>
     <h1>RF Online Tools</h1>
-    <p class="subtitle">Fast, free online tools for everyone</p>
+    <p>Free online tools to make your life easier — supported by ads so we can stay free.</p>
+</header>
 
-    <div class="tool-grid">
+<div class="tools">
 
-        <a class="tool" href="/qrcode/">
-            🔳 QR Code Generator
-        </a>
-
-        <a class="tool" href="/pdfcompressor/">
-            📄 PDF Compressor
-        </a>
-
-        <a class="tool" href="/pdf-to-word/">
-            📃 PDF to Word Converter
-        </a>
-
-        <a class="tool" href="/image-compressor/">
-            🖼️ Image Compressor
-        </a>
-
+    <div class="tool-card" onclick="location.href='qrcode/'">
+        <h3>QR Code Generator</h3>
+        <p>Create clean & fast QR codes instantly.</p>
     </div>
+
+    <div class="tool-card" onclick="location.href='pdf-to-word/'">
+        <h3>PDF to Word Converter</h3>
+        <p>Convert PDFs into editable Word docs.</p>
+    </div>
+
+    <div class="tool-card" onclick="location.href='pdf-compressor/'">
+        <h3>PDF Compressor</h3>
+        <p>Reduce PDF file size quickly and easily.</p>
+    </div>
+
+    <div class="tool-card" onclick="location.href='image-compressor/'">
+        <h3>Image Compressor</h3>
+        <p>Compress images while keeping high quality.</p>
+    </div>
+
+</div>
+
+<footer>
+    <p>© 2025 RF Online Tools — Ads are used to keep this site free.</p>
+    <a href="privacy.html">Privacy Policy</a> •
+    <a href="terms.html">Terms of Service</a> •
+    <a href="ads.html">Ad Disclosure</a>
+</footer>
 
 </body>
 </html>
