@@ -1,5 +1,6 @@
-function compressPDF() {
+async function compressPDF() {
     const fileInput = document.getElementById("pdfInput");
+    const level = document.getElementById("compressionLevel").value;
     const status = document.getElementById("status");
     const downloadLink = document.getElementById("downloadLink");
 
@@ -9,12 +10,9 @@ function compressPDF() {
     }
 
     const file = fileInput.files[0];
+    status.innerText = "Compressing... Please wait.";
 
-    status.innerText = "Compressing PDF... (this may take a few seconds)";
-
-    // Browser-based compression using PDFLib
     const reader = new FileReader();
-
     reader.onload = async function (e) {
         try {
             const pdfBytes = new Uint8Array(e.target.result);
@@ -23,20 +21,37 @@ function compressPDF() {
                 updateMetadata: false
             });
 
-            // Remove metadata, fonts, extra streams (light compression)
-            pdfDoc.setTitle("");
-            pdfDoc.setAuthor("");
-            pdfDoc.setSubject("");
-            pdfDoc.setKeywords([]);
-            pdfDoc.setProducer("");
-            pdfDoc.setCreator("");
+            // Apply compression levels
+            let settings = {};
 
-            const compressed = await pdfDoc.save({
-                useObjectStreams: true,
-                compress: true
-            });
+            if (level === "low") {
+                settings = {
+                    useObjectStreams: false,
+                    compress: false,
+                };
+            } else if (level === "medium") {
+                settings = {
+                    useObjectStreams: true,
+                    compress: true,
+                };
+            } else if (level === "high") {
+                settings = {
+                    useObjectStreams: true,
+                    compress: true,
+                };
 
-            // Create download link
+                // Remove metadata for stronger shrinkage
+                pdfDoc.setTitle("");
+                pdfDoc.setAuthor("");
+                pdfDoc.setSubject("");
+                pdfDoc.setKeywords([]);
+                pdfDoc.setProducer("");
+                pdfDoc.setCreator("");
+            }
+
+            const compressed = await pdfDoc.save(settings);
+
+            // Download
             const blob = new Blob([compressed], { type: "application/pdf" });
             downloadLink.href = URL.createObjectURL(blob);
             downloadLink.download = "compressed.pdf";
@@ -44,8 +59,8 @@ function compressPDF() {
             downloadLink.innerText = "Download Compressed PDF";
 
             status.innerText = "Compression complete!";
-
-        } catch (err) {
+        }
+        catch (err) {
             console.error(err);
             status.innerText = "Error compressing PDF.";
         }
