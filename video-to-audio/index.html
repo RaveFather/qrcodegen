@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MP4 → MP3 Converter — RF Online Tools</title>
+
+  <!-- Google AdSense verification -->
+  <meta name="google-adsense-account" content="ca-pub-6776252433902731">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
+    crossorigin="anonymous"></script>
+
+  <!-- styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- ffmpeg.wasm (browser ffmpeg) -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+</head>
+<body>
+  <main class="card">
+    <h1>MP4 → MP3 Converter</h1>
+    <p class="muted">Upload an MP4 (video) and download the extracted MP3 audio — runs entirely in your browser.</p>
+
+    <label class="file-label">
+      <input id="fileInput" type="file" accept="video/*" />
+      <span>Select MP4 file (≤ 100 MB)</span>
+    </label>
+
+    <div class="controls">
+      <button id="convertBtn" disabled>Convert to MP3</button>
+      <button id="downloadBtn" style="display:none">Download MP3</button>
+    </div>
+
+    <div class="progress" id="progress" aria-hidden="true" style="display:none">
+      <div class="bar" id="progressBar" style="width:0%"></div>
+      <div class="progressText" id="progressText">0%</div>
+    </div>
+
+    <p class="note">Tip: For best speed use files under 100MB. Very large files may be slow or fail in low-memory devices.</p>
+
+    <div class="ad-placeholder">[AD SLOT]</div>
+
+    <footer>
+      <a href="/">&larr; Home</a> • <a href="/privacy.html">Privacy</a>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
