@@ -30,3 +30,10 @@ button {
 button:hover {
     background: #0056b3;
 }
+
+select {
+    margin-top: 15px;
+    padding: 8px;
+    width: 100%;
+    border-radius: 5px;
+}
