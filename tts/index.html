@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text to Speech – RF Online Tools</title>
+
+<!-- ADSENSE -->
+<meta name="google-adsense-account" content="ca-pub-6776252433902731">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
+
+<style>
+    body {
+        margin: 0;
+        background: #0f0f0f;
+        font-family: "Inter", sans-serif;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        background: linear-gradient(90deg, #00eaff, #008cff);
+        -webkit-background-clip: text;
+        color: transparent;
+        margin-bottom: 5px;
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    p.subtitle {
+        opacity: 0.7;
+        margin-bottom: 40px;
+        animation: fadeIn 1.2s ease-in-out;
+    }
+
+    .tts-box {
+        width: 100%;
+        max-width: 650px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 18px;
+        padding: 25px;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.08);
+        animation: fadeInUp 1s ease-in-out;
+    }
+
+    textarea {
+        width: 100%;
+        height: 180px;
+        padding: 15px;
+        border-radius: 12px;
+        border: none;
+        background: rgba(255,255,255,0.08);
+        color: white;
+        font-size: 1rem;
+        resize: none;
+        outline: none;
+    }
+
+    select {
+        width: 100%;
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.08);
+        color: white;
+        border: none;
+        outline: none;
+        font-size: 1rem;
+    }
+
+    .btns {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+    }
+
+    button {
+        flex: 1;
+        padding: 14px;
+        background: linear-gradient(90deg, #00eaff, #008cff);
+        border: none;
+        color: #000;
+        font-weight: 700;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: 0.3s;
+        font-size: 1rem;
+    }
+
+    button:hover {
+        opacity: 0.8;
+        transform: translateY(-3px);
+    }
+
+    audio {
+        width: 100%;
+        margin-top: 25px;
+    }
+
+    footer {
+        margin-top: 40px;
+        text-align: center;
+        opacity: 0.6;
+        font-size: 0.9rem;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity:0; transform: translateY(40px); }
+        to { opacity:1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+
+<h1>Text to Speech</h1>
+<p class="subtitle">Type text → Choose a voice → Generate audio → Download MP3</p>
+
+<div class="tts-box">
+    <textarea id="ttsText" placeholder="Type or paste your text here..."></textarea>
+
+    <select id="voiceSelect"></select>
+
+    <div class="btns">
+        <button onclick="speakText()">Speak</button>
+        <button onclick="downloadAudio()">Download MP3</button>
+    </div>
+
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+</div>
+
+<footer>
+    <p>All processing happens in your browser. Your text never leaves your device.</p>
+</footer>
+
+<script>
+let voices = [];
+let audioBlob = null;
+
+function loadVoices() {
+    voices = speechSynthesis.getVoices();
+    const select = document.getElementById("voiceSelect");
+
+    select.innerHTML = voices.map(v =>
+        `<option value="${v.name}">${v.name} (${v.lang})</option>`
+    ).join("");
+}
+
+speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function speakText() {
+    const text = document.getElementById("ttsText").value;
+    if (!text.trim()) return;
+
+    const msg = new SpeechSynthesisUtterance(text);
+    const selectedVoice = voices.find(v => v.name === document.getElementById("voiceSelect").value);
+
+    if (selectedVoice) msg.voice = selectedVoice;
+
+    speechSynthesis.speak(msg);
+}
+
+function downloadAudio() {
+    const text = document.getElementById("ttsText").value;
+    if (!text.trim()) return alert("Enter text first.");
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    const selectedVoice = voices.find(v => v.name === document.getElementById("voiceSelect").value);
+    if (selectedVoice) utterance.voice = selectedVoice;
+
+    const audioChunks = [];
+    const stream = new MediaStream();
+    const dest = new AudioContext().createMediaStreamDestination();
+
+    const synth = window.speechSynthesis;
+    const audio = new Audio();
+    audio.srcObject = stream;
+
+    const recorder = new MediaRecorder(dest.stream);
+
+    recorder.ondataavailable = e => audioChunks.push(e.data);
+
+    recorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+        const url = URL.createObjectURL(audioBlob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "tts_audio.mp3";
+        a.click();
+
+        URL.revokeObjectURL(url);
+    };
+
+    recorder.start();
+    synth.speak(utterance);
+
+    utterance.onend = () => recorder.stop();
+}
+</script>
+
+</body>
+</html>
