@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Merge PDF — RF Online Tools</title>
+  <meta name="description" content="Merge multiple PDF files into one — free, in-browser, no upload. Fast and secure." />
+
+  <!-- GOOGLE VERIFICATION -->
+  <meta name="google-adsense-account" content="ca-pub-6776252433902731">
+
+  <!-- ADSENSE (kept on every page per your rule) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
+
+  <!-- pdf-lib (client-side PDF manipulation) -->
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f0f0f; --card:rgba(255,255,255,0.04); --accent1:#00eaff; --accent2:#008cff; --muted:rgba(255,255,255,0.65);
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased}
+    .wrap{max-width:980px;margin:28px auto;padding:20px}
+    header{text-align:center;margin-bottom:18px}
+    h1{font-size:28px;margin:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;color:transparent}
+    p.lead{color:var(--muted);margin-top:6px}
+
+    .card{background:var(--card);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);}
+
+    /* uploader */
+    .uploader{border:2px dashed rgba(255,255,255,0.06);padding:18px;border-radius:12px;text-align:center;margin-bottom:12px;cursor:pointer}
+    .uploader.dragover{background:linear-gradient(90deg, rgba(0,136,255,0.06), rgba(0,136,255,0.02));border-color:rgba(0,136,255,0.22)}
+    .uploader input{display:none}
+    .small{font-size:13px;color:var(--muted);margin-top:8px}
+
+    /* file list */
+    .file-list{margin-top:12px}
+    .file-row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:8px}
+    .file-row .meta{flex:1}
+    .file-name{font-weight:700}
+    .file-size{color:var(--muted);font-size:13px;margin-top:4px}
+    .controls{display:flex;gap:8px}
+
+    button.btn{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#000;border:none;padding:10px 14px;border-radius:10px;font-weight:800;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer}
+    button.small{padding:8px 10px;font-size:13px}
+
+    .actions-row{display:flex;gap:10px;align-items:center;margin-top:12px}
+    .status{color:var(--muted);font-size:14px;margin-left:6px}
+
+    /* progress bar */
+    .progress{height:8px;background:rgba(255,255,255,0.04);border-radius:6px;overflow:hidden;margin-top:10px}
+    .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width 0.18s}
+
+    .note{font-size:13px;color:var(--muted);margin-top:10px}
+
+    /* responsive */
+    @media (max-width:720px){
+      .file-row{flex-direction:column;align-items:stretch}
+      .controls{flex-wrap:wrap}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Merge PDF</h1>
+      <p class="lead">Drag & drop or select multiple PDF files, reorder them, and merge into one downloadable PDF — all in your browser.</p>
+    </header>
+
+    <div class="card">
+      <label class="uploader" id="uploader">
+        <input id="fileInput" type="file" accept="application/pdf" multiple>
+        <div>
+          <strong>Drop PDFs here</strong>
+          <div class="small">or click to choose files (max ~200 MB per file recommended)</div>
+        </div>
+      </label>
+
+      <div id="fileList" class="file-list"></div>
+
+      <div class="actions-row">
+        <button id="mergeBtn" class="btn" disabled>Merge PDFs</button>
+        <button id="clearBtn" class="ghost small">Clear list</button>
+        <div class="status" id="status">No files selected</div>
+      </div>
+
+      <div class="progress" aria-hidden="true" id="progressBar" style="display:none"><i></i></div>
+
+      <div class="note">Files are processed in your browser — we never upload them. Large files may take more time. If the merge fails, try smaller batches.</div>
+    </div>
+
+    <footer style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center">
+      RF Online Tools • We run ads to keep the tools free.
+    </footer>
+  </div>
+
+<script>
+/*
+  PDF Merge Tool (client-side) using pdf-lib
+  - supports multiple files
+  - simple reorder (up/down/remove)
+  - merges pages preserving original page sizes
+*/
+
+const MAX_FILE_BYTES = 200 * 1024 * 1024; // 200 MB per file recommended (soft limit)
+
+const uploader = document.getElementById('uploader');
+const fileInput = document.getElementById('fileInput');
+const fileListEl = document.getElementById('fileList');
+const mergeBtn = document.getElementById('mergeBtn');
+const clearBtn = document.getElementById('clearBtn');
+const statusEl = document.getElementById('status');
+const progressBar = document.getElementById('progressBar');
+const progressFill = progressBar.querySelector('i');
+
+let files = []; // {file: File, id: uniqueId}
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function humanFileSize(bytes){
+  if(bytes < 1024) return bytes+' B';
+  const i = Math.floor(Math.log(bytes)/Math.log(1024));
+  const sizes = ['B','KB','MB','GB','TB'];
+  return (bytes/Math.pow(1024,i)).toFixed( (i>1)?1:0 ) + ' ' + sizes[i];
+}
+
+function renderList(){
+  fileListEl.innerHTML = '';
+  if(files.length === 0){
+    statusEl.textContent = 'No files selected';
+    mergeBtn.disabled = true;
+    return;
+  }
+  mergeBtn.disabled = false;
+  statusEl.textContent = `${files.length} file(s) ready`;
+  files.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.dataset.id = item.id;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const name = document.createElement('div');
+    name.className = 'file-name';
+    name.textContent = item.file.name;
+    const size = document.createElement('div');
+    size.className = 'file-size';
+    size.textContent = humanFileSize(item.file.size);
+
+    meta.appendChild(name);
+    meta.appendChild(size);
+
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+
+    const up = document.createElement('button'); up.className='ghost small'; up.textContent='↑'; up.title='Move up';
+    const down = document.createElement('button'); down.className='ghost small'; down.textContent='↓'; down.title='Move down';
+    const remove = document.createElement('button'); remove.className='ghost small'; remove.textContent='Remove'; remove.title='Remove file';
+
+    up.onclick = () => { if(idx>0){ files.splice(idx,1); files.splice(idx-1,0,item); renderList(); } };
+    down.onclick = () => { if(idx<files.length-1){ files.splice(idx,1); files.splice(idx+1,0,item); renderList(); } };
+    remove.onclick = () => { files = files.filter(f=>f.id!==item.id); renderList(); };
+
+    controls.appendChild(up); controls.appendChild(down); controls.appendChild(remove);
+
+    row.appendChild(meta);
+    row.appendChild(controls);
+    fileListEl.appendChild(row);
+  });
+}
+
+function addFilesFromList(list){
+  let added = 0;
+  for(const f of list){
+    if(f.type !== 'application/pdf'){
+      alert('Only PDF files are accepted: ' + f.name);
+      continue;
+    }
+    if(f.size > MAX_FILE_BYTES){
+      const ok = confirm(`File "${f.name}" is large (${humanFileSize(f.size)}). Merging large files may crash the browser. Add anyway?`);
+      if(!ok) continue;
+    }
+    files.push({file: f, id: uid()});
+    added++;
+  }
+  if(added>0) renderList();
+}
+
+// drag & drop handlers
+uploader.addEventListener('click', ()=> fileInput.click());
+uploader.addEventListener('dragover', (e)=>{ e.preventDefault(); uploader.classList.add('dragover'); });
+uploader.addEventListener('dragleave', ()=> uploader.classList.remove('dragover'));
+uploader.addEventListener('drop', (e)=>{ e.preventDefault(); uploader.classList.remove('dragover'); addFilesFromList(Array.from(e.dataTransfer.files)); });
+
+fileInput.addEventListener('change', ()=> { addFilesFromList(Array.from(fileInput.files)); fileInput.value = ''; });
+
+clearBtn.addEventListener('click', ()=> { if(confirm('Clear all selected files?')){ files=[]; renderList(); }});
+
+// merge process
+mergeBtn.addEventListener('click', async ()=>{
+  if(files.length === 0) return alert('No files selected');
+  mergeBtn.disabled = true;
+  clearBtn.disabled = true;
+  statusEl.textContent = 'Merging...';
+  progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+
+  try{
+    const PDFLib = window.PDFLib;
+    const mergedPdf = await PDFLib.PDFDocument.create();
+
+    // for better memory management, we will process one file at a time
+    const totalFiles = files.length;
+    let processed = 0;
+
+    for(const fItem of files){
+      const arrayBuffer = await fItem.file.arrayBuffer();
+      // load source pdf
+      const src = await PDFLib.PDFDocument.load(arrayBuffer);
+      const srcPages = await mergedPdf.copyPages(src, src.getPageIndices());
+      for(const p of srcPages) mergedPdf.addPage(p);
+
+      processed++;
+      const pct = Math.round((processed / totalFiles) * 100);
+      progressFill.style.width = pct + '%';
+      statusEl.textContent = `Merging... (${processed}/${totalFiles})`;
+      await new Promise(r => setTimeout(r, 80)); // tiny pause to keep UI responsive
+    }
+
+    // finalize
+    const mergedBytes = await mergedPdf.save();
+    const blob = new Blob([mergedBytes], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob);
+
+    // create download link
+    const timestamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    const filename = `merged-${timestamp}.pdf`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    statusEl.textContent = `Merge complete — downloaded ${filename}`;
+  } catch(err){
+    console.error(err);
+    alert('Merge failed: ' + (err && err.message ? err.message : err));
+    statusEl.textContent = 'Merge failed';
+  } finally {
+    mergeBtn.disabled = false;
+    clearBtn.disabled = false;
+    setTimeout(()=> { progressBar.style.display = 'none'; progressFill.style.width = '0%'; }, 1200);
+  }
+});
+
+// initial render
+renderList();
+
+</script>
+</body>
+</html>
