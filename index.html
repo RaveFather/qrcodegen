@@ -1,8 +1,3 @@
-
-here is the code.
-
-dont fuck it up
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,14 +6,12 @@ dont fuck it up
   <title>RF Online Tools – Free Simple Tools</title>
   <meta name="description" content="RF Online Tools — Free, fast, simple online utilities: PDF tools, Image tools, Audio & Video, YouTube tools, Business tools and more. No account required." />
 
-  <!-- GOOGLE VERIFICATION -->
+  <!-- GOOGLE VERIFICATION / ADSENSE -->
   <meta name="google-adsense-account" content="ca-pub-6776252433902731">
-
-  <!-- ADSENSE -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
       crossorigin="anonymous"></script>
 
-  <!-- Basic SEO structured data: navigation for search engines -->
+  <!-- Basic SEO structured data -->
   <script type="application/ld+json">
   {
     "@context":"https://schema.org",
@@ -29,17 +22,7 @@ dont fuck it up
       "@type":"SearchAction",
       "target":"https://rfonlinetools.com/?q={search_term_string}",
       "query-input":"required name=search_term_string"
-    },
-    "hasPart":[
-      {"@type":"WebPage","name":"PDF Tools","url":"https://rfonlinetools.com/category/pdf-tools"},
-      {"@type":"WebPage","name":"Image Tools","url":"https://rfonlinetools.com/category/image-tools"},
-      {"@type":"WebPage","name":"Audio & Music Tools","url":"https://rfonlinetools.com/category/audio-tools"},
-      {"@type":"WebPage","name":"Video Tools","url":"https://rfonlinetools.com/category/video-tools"},
-      {"@type":"WebPage","name":"YouTube Tools","url":"https://rfonlinetools.com/category/youtube-tools"},
-      {"@type":"WebPage","name":"Business Tools","url":"https://rfonlinetools.com/category/business-tools"},
-      {"@type":"WebPage","name":"Text Tools","url":"https://rfonlinetools.com/category/text-tools"},
-      {"@type":"WebPage","name":"Other Tools","url":"https://rfonlinetools.com/category/other-tools"}
-    ]
+    }
   }
   </script>
 
@@ -47,56 +30,58 @@ dont fuck it up
     :root{
       --bg: #0f0f0f;
       --card: rgba(255,255,255,0.05);
-      --card-strong: rgba(255,255,255,0.10);
       --accent-1: #00eaff;
       --accent-2: #008cff;
-      --muted: rgba(255,255,255,0.6);
+      --muted: rgba(255,255,255,0.65);
       --glass-border: rgba(255,255,255,0.08);
       --max-width: 1200px;
+      --radius: 14px;
+      --gap: 18px;
     }
 
-    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,Helvetica; -webkit-font-smoothing:antialiased;}
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,Helvetica;-webkit-font-smoothing:antialiased;}
     .container{max-width:var(--max-width);margin:0 auto;padding:28px;}
 
-    header{text-align:center;padding:36px 16px 12px 16px; animation:fadeIn 0.9s ease;}
+    header{text-align:center;padding:36px 16px 8px 16px; animation:fadeIn 0.9s ease;}
     h1{font-size:3rem;font-weight:800;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));-webkit-background-clip:text;color:transparent;margin:0}
-    p.subtitle{font-size:1.05rem;opacity:0.8;margin-top:8px;margin-bottom:18px}
+    p.subtitle{font-size:1.05rem;opacity:0.86;margin-top:8px;margin-bottom:18px}
 
-    /* Top categories toolbar */
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:18px 0 28px 0}
-    .tab{padding:10px 14px;border-radius:999px;background:transparent;border:1px solid transparent;color:var(--muted);cursor:pointer;font-weight:700;transition:0.18s}
+    /* toolbar + search */
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:18px 0 20px 0}
+    .tab{padding:10px 14px;border-radius:999px;background:transparent;border:1px solid transparent;color:var(--muted);cursor:pointer;font-weight:700;transition:all .18s}
     .tab:hover{transform:translateY(-3px);opacity:0.95}
-    .tab.active{background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:#000;border-color:transparent;box-shadow:0 6px 30px rgba(0,140,255,0.12)}
+    .tab.active{background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:#000;border-color:transparent;box-shadow:0 8px 30px rgba(0,140,255,0.10)}
 
-    /* categories grid (sections) */
-    section.category{
-      margin:28px 0;
-      padding:20px;
-      border-radius:14px;
-      background: linear-gradient(180deg, rgba(0,136,255,0.08), rgba(0,136,255,0.04));
-      border: 1px solid rgba(0,136,255,0.25);
-      animation:fadeInUp 0.9s ease;
-    }
-    section.category h2{margin:0 0 12px 0;font-size:1.4rem}
+    .utility-row{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:8px 0 24px 0}
+    .search{flex:1;max-width:620px;background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04)}
+    .search input{width:100%;background:transparent;border:none;color:#fff;outline:none;font-size:0.98rem}
+    .see-all{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
+
+    /* categories */
+    section.category{margin:18px 0;padding:18px;border-radius:var(--radius);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid var(--glass-border);animation:fadeInUp 0.9s ease}
+    section.category h2{margin:0 0 8px 0;font-size:1.3rem}
     .category-desc{color:var(--muted);font-size:0.95rem;margin-bottom:12px}
 
-    .tools-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-      gap:16px;
-      margin-top:8px;
-    }
+    .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--gap);margin-top:8px}
 
-    .tool-card{
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      padding:18px;border-radius:12px;text-decoration:none;color:white;backdrop-filter:blur(6px);
-      border:1px solid rgba(255,255,255,0.04);transition:all .22s;display:block;
-    }
-    .tool-card:hover{transform:translateY(-8px);box-shadow:0 20px 40px rgba(0,0,0,0.5);border-color: rgba(255,255,255,0.12)}
+    .tool-card{background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));padding:18px;border-radius:12px;text-decoration:none;color:white;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.03);transition:all .22s;display:block}
     .tool-card h3{margin:0;font-size:1.05rem}
     .tool-card p{margin:8px 0 0 0;color:var(--muted);font-size:0.92rem}
+    .tool-card:hover{transform:translateY(-8px);box-shadow:0 18px 40px rgba(0,0,0,0.6);border-color: rgba(255,255,255,0.08)}
 
+    /* small footer */
     footer{margin:34px 0 18px 0;text-align:center;color:var(--muted);font-size:0.92rem}
+
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+    /* responsive tweaks */
+    @media (max-width:640px){
+      h1{font-size:2.2rem}
+      .toolbar{justify-content:center}
+      .utility-row{flex-direction:column;align-items:stretch}
+      .see-all{width:100%}
+    }
   </style>
 </head>
 <body>
@@ -106,28 +91,45 @@ dont fuck it up
       <p class="subtitle">Free, fast, simple tools — organized for speed, discovery and ad views.</p>
     </header>
 
+    <!-- top toolbar -->
+    <div class="toolbar" role="tablist" aria-label="Tool categories">
+      <button class="tab active" data-filter="all" onclick="filterCategory('all')">All Tools</button>
+      <button class="tab" data-filter="pdf" onclick="filterCategory('pdf')">PDF Tools</button>
+      <button class="tab" data-filter="image" onclick="filterCategory('image')">Image Tools</button>
+      <button class="tab" data-filter="audio" onclick="filterCategory('audio')">Audio & Music</button>
+      <button class="tab" data-filter="video" onclick="filterCategory('video')">Video Tools</button>
+      <button class="tab" data-filter="youtube" onclick="filterCategory('youtube')">YouTube Tools</button>
+      <button class="tab" data-filter="business" onclick="filterCategory('business')">Business Tools</button>
+      <button class="tab" data-filter="text" onclick="filterCategory('text')">Text Tools</button>
+      <button class="tab" data-filter="other" onclick="filterCategory('other')">Other</button>
+    </div>
+
+    <!-- utility row -->
+    <div class="utility-row" aria-hidden="false">
+      <div class="search" role="search">
+        <input id="siteSearch" placeholder="Search tools (type & press Enter)" />
+      </div>
+      <button class="see-all" onclick="scrollToAll()">Jump to categories</button>
+    </div>
+
+    <!-- ========== SECTIONS ========== -->
+
     <!-- PDF Tools -->
     <section class="category" data-category="pdf" id="cat-pdf">
       <h2>PDF Tools</h2>
       <div class="category-desc">Convert, compress, split and edit PDFs in your browser. Fast & secure — files remain on your device.</div>
       <div class="tools-grid">
-
         <a class="tool-card" href="/pdfcompressor/"><h3>PDF Compressor</h3><p>Shrink your PDF files without losing quality.</p></a>
         <a class="tool-card" href="/pdf-to-word/"><h3>PDF → Word</h3><p>Convert PDF files into editable Word format.</p></a>
         <a class="tool-card" href="/pdf-to-image/"><h3>PDF → Image</h3><p>Convert each PDF page into JPG/PNG images instantly.</p></a>
         <a class="tool-card" href="/image-to-pdf/"><h3>Image → PDF</h3><p>Convert images into a single PDF.</p></a>
 
-        <a class="tool-card" href="/pdf-merge/">
-          <h3>PDF Merge</h3>
-          <p>Combine multiple PDF files into one clean document instantly.</p>
-        </a>
+        <a class="tool-card" href="/pdf-merge/"><h3>PDF Merge</h3><p>Combine multiple PDF files into one clean document instantly.</p></a>
+        <a class="tool-card" href="/pdf-split/"><h3>PDF Split</h3><p>Split PDFs into separate pages or custom ranges.</p></a>
 
-        <!-- ⭐ NEW TOOL (ONLY CHANGE MADE) ⭐ -->
-        <a class="tool-card" href="/pdf-to-excel/">
-          <h3>PDF → Excel</h3>
-          <p>Convert tables from PDF into a clean Excel spreadsheet.</p>
-        </a>
+        <a class="tool-card" href="/pdf-to-excel/"><h3>PDF → Excel</h3><p>Convert tables from PDFs into clean Excel spreadsheets.</p></a>
 
+        <a class="tool-card" href="/pdf-unlock/"><h3>PDF Unlock</h3><p>Remove passwords from locked PDFs instantly.</p></a>
       </div>
     </section>
 
@@ -137,16 +139,122 @@ dont fuck it up
       <div class="category-desc">Image conversion, compression and optimization tools for web and social media.</div>
       <div class="tools-grid">
         <a class="tool-card" href="/image-compressor/"><h3>Image Compressor</h3><p>Reduce image size while keeping it crisp.</p></a>
+        <a class="tool-card" href="/image-to-pdf/"><h3>Image → PDF</h3><p>Convert images into a single PDF.</p></a>
         <a class="tool-card" href="/youtube-thumbnail/"><h3>YouTube Thumbnail Downloader</h3><p>Download any YouTube video's full-quality thumbnail.</p></a>
       </div>
     </section>
 
-    <!-- Audio, Video, YT, Business, Text, Other ... unchanged -->
-    <!-- (omitted for space, but in YOUR file they’re exactly the same) -->
+    <!-- Audio & Music Tools -->
+    <section class="category" data-category="audio" id="cat-audio">
+      <h2>Audio & Music Tools</h2>
+      <div class="category-desc">Extract audio, convert formats, create TTS files and more — all in the browser.</div>
+      <div class="tools-grid">
+        <a class="tool-card" href="/video-to-audio/"><h3>Video → Audio</h3><p>Extract MP3/Audio from any MP4 video instantly.</p></a>
+        <a class="tool-card" href="/tts/"><h3>Text to Speech</h3><p>Generate natural AI voices and download MP3s.</p></a>
+      </div>
+    </section>
+
+    <!-- Video Tools -->
+    <section class="category" data-category="video" id="cat-video">
+      <h2>Video Tools</h2>
+      <div class="category-desc">Tools for trimming, converting and preparing video files.</div>
+      <div class="tools-grid">
+        <a class="tool-card" href="/video-to-audio/"><h3>Video → Audio</h3><p>Extract MP3 audio from videos.</p></a>
+        <!-- add video tools here in future -->
+      </div>
+    </section>
+
+    <!-- YouTube Tools -->
+    <section class="category" data-category="youtube" id="cat-youtube">
+      <h2>YouTube Tools</h2>
+      <div class="category-desc">Creator-friendly utilities — thumbnails, downloads and more.</div>
+      <div class="tools-grid">
+        <a class="tool-card" href="/youtube-thumbnail/"><h3>YouTube Thumbnail Downloader</h3><p>Grab full resolution thumbnails instantly.</p></a>
+      </div>
+    </section>
+
+    <!-- Business Tools -->
+    <section class="category" data-category="business" id="cat-business">
+      <h2>Business & Office Tools</h2>
+      <div class="category-desc">Invoices, quotes and other office utilities to save time and look professional.</div>
+      <div class="tools-grid">
+        <a class="tool-card" href="/invoice-generator/"><h3>Invoice Generator</h3><p>Create professional invoices and export as PDF.</p></a>
+      </div>
+    </section>
+
+    <!-- Text Tools -->
+    <section class="category" data-category="text" id="cat-text">
+      <h2>Text Tools</h2>
+      <div class="category-desc">Text utilities — converters and quick helpers for copywriters and devs.</div>
+      <div class="tools-grid">
+        <a class="tool-card" href="/qrcode/"><h3>QR Code Generator</h3><p>Create instant QR codes for links, text, or contact info.</p></a>
+      </div>
+    </section>
+
+    <!-- Other Tools -->
+    <section class="category" data-category="other" id="cat-other">
+      <h2>Other Tools</h2>
+      <div class="category-desc">Handy utilities that don’t fit the categories above.</div>
+      <div class="tools-grid">
+        <!-- future tools go here -->
+      </div>
+    </section>
 
     <footer>
-      <p>RF Online Tools is a free service. Ads keep the tools running. Files never leave your device.</p>
+      <p>
+        RF Online Tools is a free service. We show ads to keep the tools running — thanks for understanding.<br><br>
+        By using our site, you agree to our Terms & Privacy. We do not store your files; most processing happens in your browser.
+      </p>
     </footer>
   </div>
+
+  <script>
+    // --- Category + Search logic ---
+    function filterCategory(cat) {
+      // tabs
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.filter === cat));
+      // sections
+      document.querySelectorAll('section.category').forEach(sec => {
+        sec.style.display = (cat === 'all' || sec.dataset.category === cat) ? '' : 'none';
+      });
+      // scroll first visible into view
+      const first = document.querySelector('section.category:not([style*="display: none"])');
+      if (first) first.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    // search on Enter
+    document.getElementById('siteSearch').addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        const q = this.value.trim().toLowerCase();
+        if(!q) { filterCategory('all'); return; }
+        // hide all
+        document.querySelectorAll('section.category').forEach(sec => sec.style.display = 'none');
+        let any = false;
+        document.querySelectorAll('.tool-card').forEach(card => {
+          const txt = (card.innerText || '').toLowerCase();
+          if(txt.includes(q)){
+            card.style.display = '';
+            any = true;
+            const parent = card.closest('section.category');
+            if(parent) parent.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+        if(!any) alert('No tools found for "' + q + '". Try different keywords.');
+      }
+    });
+
+    function scrollToAll(){
+      const first = document.querySelector('section.category');
+      if(first) window.scrollTo({top: first.offsetTop - 12, behavior:'smooth'});
+    }
+
+    // initialize
+    document.addEventListener('DOMContentLoaded', function(){
+      filterCategory('all');
+    });
+  </script>
 </body>
 </html>
