@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Split PDF — RF Online Tools</title>
+  <meta name="description" content="Split PDF files into pages or extract page ranges in your browser. Free and secure — files never leave your device." />
+
+  <!-- GOOGLE VERIFICATION -->
+  <meta name="google-adsense-account" content="ca-pub-6776252433902731">
+
+  <!-- ADSENSE -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731" crossorigin="anonymous"></script>
+
+  <!-- pdf-lib for client-side PDF manipulation -->
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f0f0f; --card:rgba(255,255,255,0.04); --accent1:#00eaff; --accent2:#008cff; --muted:rgba(255,255,255,0.65);
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased}
+    .wrap{max-width:980px;margin:28px auto;padding:20px}
+    header{text-align:center;margin-bottom:14px}
+    h1{font-size:28px;margin:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;color:transparent}
+    p.lead{color:var(--muted);margin-top:6px}
+
+    .card{background:var(--card);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);}
+
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .uploader{border:2px dashed rgba(255,255,255,0.06);padding:14px;border-radius:12px;text-align:center;cursor:pointer;flex:1;min-width:220px}
+    .uploader input{display:none}
+    .small{font-size:13px;color:var(--muted);margin-top:8px}
+
+    .meta{margin-top:14px;color:var(--muted);font-size:14px}
+
+    label.block{display:block;margin-top:12px;font-weight:700}
+
+    .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    button.btn{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#000;border:none;padding:10px 14px;border-radius:10px;font-weight:800;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer}
+    button.small{padding:8px 10px;font-size:13px}
+
+    input[type="text"], input[type="number"], select {background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:8px;color:#fff;outline:none;width:100%}
+    .input-inline{display:flex;gap:8px;align-items:center}
+
+    .status{color:var(--muted);margin-top:10px;font-size:14px}
+    .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:6px;overflow:hidden;margin-top:10px}
+    .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width 0.15s}
+
+    .actions{margin-top:14px;display:flex;gap:10px;align-items:center}
+
+    .hint{font-size:13px;color:var(--muted);margin-top:12px}
+
+    @media (max-width:720px){
+      .row{flex-direction:column}
+      .input-inline{flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>PDF Splitter</h1>
+      <p class="lead">Extract pages or split a PDF into separate files — all in your browser. No uploads, no accounts.</p>
+    </header>
+
+    <div class="card">
+      <div class="row">
+        <label class="uploader" id="uploader" title="Click to choose a PDF">
+          <input id="fileInput" type="file" accept="application/pdf">
+          <div><strong>Choose a PDF file</strong><div class="small">or click here (one file at a time)</div></div>
+        </label>
+
+        <div style="min-width:220px">
+          <div style="margin-bottom:8px;font-weight:700">Options</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <select id="modeSelect" title="Select split mode">
+              <option value="range">Extract range → one combined PDF</option>
+              <option value="pages">Extract specific pages (comma separated, e.g. 1,3,5)</option>
+              <option value="split">Split into single-page PDFs (download multiple files)</option>
+            </select>
+
+            <div id="inputRange" class="input-inline">
+              <input id="rangeInput" type="text" placeholder="e.g. 1-3" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="meta" id="meta">No file selected</div>
+
+      <div class="actions">
+        <button id="previewBtn" class="ghost small" disabled>Show Pages</button>
+        <button id="splitBtn" class="btn" disabled>Run</button>
+        <button id="clearBtn" class="ghost small">Clear</button>
+      </div>
+
+      <div class="progress" id="progress" style="display:none"><i></i></div>
+      <div class="status" id="status" style="display:block"></div>
+
+      <div id="pagesContainer" style="margin-top:12px"></div>
+
+      <div class="hint">
+        Tip: For ranges use <code>1-3</code>. For specific pages use <code>1,3,5</code>. Page numbers start at 1. Large PDFs may take longer or crash mobile browsers.
+      </div>
+    </div>
+
+    <footer style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center">
+      RF Online Tools • We run ads to keep the tools free.
+    </footer>
+  </div>
+
+<script>
+/* PDF Split Tool (client-side) using pdf-lib
+   - single file upload
+   - modes: range (1-3), pages (1,3,5), split (every page separate)
+   - outputs: single merged PDF of extracted pages OR multiple downloads (split)
+*/
+
+const MAX_BYTES = 250 * 1024 * 1024; // recommended soft limit
+const fileInput = document.getElementById('fileInput');
+const uploader = document.getElementById('uploader');
+const metaEl = document.getElementById('meta');
+const previewBtn = document.getElementById('previewBtn');
+const splitBtn = document.getElementById('splitBtn');
+const clearBtn = document.getElementById('clearBtn');
+const statusEl = document.getElementById('status');
+const progress = document.getElementById('progress');
+const progressFill = progress.querySelector('i');
+const pagesContainer = document.getElementById('pagesContainer');
+const modeSelect = document.getElementById('modeSelect');
+const rangeInput = document.getElementById('rangeInput');
+
+let currentFile = null;
+let pdfDocLoaded = null;
+let pageCount = 0;
+
+// helpers
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function humanFileSize(bytes){
+  if(bytes < 1024) return bytes+' B';
+  const i = Math.floor(Math.log(bytes)/Math.log(1024));
+  const sizes = ['B','KB','MB','GB','TB'];
+  return (bytes/Math.pow(1024,i)).toFixed( (i>1)?1:0 ) + ' ' + sizes[i];
+}
+function resetUI(){
+  currentFile = null; pdfDocLoaded = null; pageCount = 0;
+  metaEl.textContent = 'No file selected'; previewBtn.disabled=true; splitBtn.disabled=true;
+  pagesContainer.innerHTML=''; progress.style.display='none'; progressFill.style.width='0%'; statusEl.textContent='';
+  rangeInput.value = '';
+}
+resetUI();
+
+// file selection
+uploader.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', async ()=>{
+  const f = fileInput.files[0];
+  if(!f) return;
+  if(f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
+    alert('Please select a PDF file.');
+    fileInput.value = '';
+    return;
+  }
+  if(f.size > MAX_BYTES) {
+    if(!confirm(`File is large (${humanFileSize(f.size)}). This may be slow or crash on low-memory devices. Add anyway?`)) {
+      fileInput.value = '';
+      return;
+    }
+  }
+  await loadPdfFile(f);
+});
+
+async function loadPdfFile(file) {
+  resetUI();
+  currentFile = file;
+  metaEl.textContent = `Loading ${file.name} — ${humanFileSize(file.size)} ...`;
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const PDFLib = window.PDFLib;
+    pdfDocLoaded = await PDFLib.PDFDocument.load(arrayBuffer);
+    pageCount = pdfDocLoaded.getPageCount();
+    metaEl.textContent = `${file.name} — ${humanFileSize(file.size)} — ${pageCount} page(s)`;
+    previewBtn.disabled = false;
+    splitBtn.disabled = false;
+    statusEl.textContent = '';
+    renderPageList();
+  } catch(err){
+    console.error(err);
+    alert('Failed to load PDF: ' + (err && err.message ? err.message : err));
+    resetUI();
+  }
+}
+
+function renderPageList(){
+  pagesContainer.innerHTML = '';
+  if(!pdfDocLoaded) return;
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexWrap = 'wrap';
+  wrap.style.gap = '8px';
+  for(let i=1;i<=pageCount;i++){
+    const b = document.createElement('button');
+    b.className = 'ghost small';
+    b.textContent = 'Page ' + i;
+    b.dataset.page = i;
+    b.onclick = ()=> togglePageSelection(i, b);
+    wrap.appendChild(b);
+  }
+  pagesContainer.appendChild(wrap);
+
+  // quick controls
+  const ctrl = document.createElement('div');
+  ctrl.style.marginTop='10px';
+  ctrl.innerHTML = `<button class="ghost small" id="selectAll">Select all</button> <button class="ghost small" id="clearSel">Clear</button> <button class="ghost small" id="invertSel">Invert</button>`;
+  pagesContainer.appendChild(ctrl);
+  document.getElementById('selectAll').onclick = ()=> {
+    pagesContainer.querySelectorAll('button[data-page]').forEach(b=> b.classList.add('selected'));
+  };
+  document.getElementById('clearSel').onclick = ()=> {
+    pagesContainer.querySelectorAll('button[data-page]').forEach(b=> b.classList.remove('selected'));
+  };
+  document.getElementById('invertSel').onclick = ()=> {
+    pagesContainer.querySelectorAll('button[data-page]').forEach(b=> b.classList.toggle('selected'));
+  };
+
+  // styles for selected (inject minimal)
+  const styleId = 'pdf-split-selected-style';
+  if(!document.getElementById(styleId)){
+    const s = document.createElement('style');
+    s.id = styleId;
+    s.textContent = `.ghost.small.selected{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#000;border:none}`;
+    document.head.appendChild(s);
+  }
+}
+
+function togglePageSelection(idx, btn){
+  btn.classList.toggle('selected');
+}
+
+// parse pages input (range like 1-3 or list like 1,3,5)
+function parsePagesInput(str){
+  str = (str || '').trim();
+  if(!str) return [];
+  // allow ranges and commas
+  const parts = str.split(',');
+  const pages = new Set();
+  for(const p of parts){
+    const t = p.trim();
+    if(t.includes('-')){
+      const [a,b] = t.split('-').map(x=>parseInt(x,10));
+      if(isNaN(a) || isNaN(b)) continue;
+      const start = Math.max(1, Math.min(a,b));
+      const end = Math.min(pageCount, Math.max(a,b));
+      for(let i=start;i<=end;i++) pages.add(i);
+    } else {
+      const n = parseInt(t,10);
+      if(!isNaN(n) && n>=1 && n<=pageCount) pages.add(n);
+    }
+  }
+  return Array.from(pages).sort((a,b)=>a-b);
+}
+
+function getSelectedPagesFromUI(){
+  const selected = Array.from(pagesContainer.querySelectorAll('button[data-page].selected')).map(b=>parseInt(b.dataset.page,10));
+  return selected.sort((a,b)=>a-b);
+}
+
+previewBtn.addEventListener('click', ()=>{
+  if(!pdfDocLoaded) return alert('Load a PDF first');
+  renderPageList();
+  statusEl.textContent = 'Page buttons shown — click pages to select or use "Select all".';
+});
+
+modeSelect.addEventListener('change', ()=>{
+  const m = modeSelect.value;
+  if(m === 'range') {
+    rangeInput.placeholder = 'e.g. 1-3';
+  } else if(m === 'pages') {
+    rangeInput.placeholder = 'e.g. 1,3,5';
+  } else {
+    rangeInput.placeholder = '(ignored for split)';
+  }
+});
+
+// main split action
+splitBtn.addEventListener('click', async ()=>{
+  if(!pdfDocLoaded) return alert('No PDF loaded');
+  const mode = modeSelect.value;
+  statusEl.textContent = 'Preparing...';
+  progress.style.display = 'block'; progressFill.style.width = '2%';
+
+  try{
+    const PDFLib = window.PDFLib;
+    const outputFiles = []; // {name, blob}
+
+    if(mode === 'split'){
+      // split into single-page PDFs
+      const total = pageCount;
+      for(let i=0;i<total;i++){
+        const newDoc = await PDFLib.PDFDocument.create();
+        const [copied] = await newDoc.copyPages(pdfDocLoaded, [i]);
+        newDoc.addPage(copied);
+        const bytes = await newDoc.save();
+        const blob = new Blob([bytes], {type:'application/pdf'});
+        outputFiles.push({name:`page-${String(i+1).padStart(3,'0')}.pdf`, blob});
+        progressFill.style.width = `${Math.round(((i+1)/total)*100)}%`;
+        statusEl.textContent = `Creating page ${i+1}/${total}...`;
+        await new Promise(r=>setTimeout(r,40));
+      }
+    } else {
+      // range or pages or UI-selected
+      let pages = [];
+      if(mode === 'range'){
+        const parsed = parsePagesInput(rangeInput.value);
+        if(parsed.length === 0) {
+          alert('Enter a valid range like 1-3 or 2-5 in the input box.');
+          progress.style.display='none'; progressFill.style.width='0%';
+          statusEl.textContent = '';
+          return;
+        }
+        pages = parsed;
+      } else if(mode === 'pages'){
+        const parsed = parsePagesInput(rangeInput.value);
+        if(parsed.length === 0){
+          alert('Enter specific pages like 1,3,5 in the input box.');
+          progress.style.display='none'; progressFill.style.width='0%';
+          statusEl.textContent = '';
+          return;
+        }
+        pages = parsed;
+      } else {
+        // fallback: UI selected buttons
+        pages = getSelectedPagesFromUI();
+        if(pages.length === 0){
+          alert('Select pages using the page buttons or choose a mode and input.');
+          progress.style.display='none'; progressFill.style.width='0%';
+          statusEl.textContent = '';
+          return;
+        }
+      }
+
+      // build a single combined PDF with selected pages
+      const newDoc = await PDFLib.PDFDocument.create();
+      // copyPages expects zero-based indexes
+      const zeroBased = pages.map(p => Math.max(0, p-1)).filter((v,i,a)=>a.indexOf(v)===i);
+      const copiedPages = await newDoc.copyPages(pdfDocLoaded, zeroBased);
+      for(const p of copiedPages) newDoc.addPage(p);
+      const bytes = await newDoc.save();
+      const blob = new Blob([bytes], {type:'application/pdf'});
+      const filename = `extracted-${String(new Date().toISOString().slice(0,19)).replace(/[:T]/g,'-')}.pdf`;
+      outputFiles.push({name:filename, blob});
+      progressFill.style.width = '100%';
+      statusEl.textContent = `Created ${filename}`;
+    }
+
+    // trigger download(s)
+    if(outputFiles.length === 0) {
+      alert('No output created.');
+    } else if(outputFiles.length === 1){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(outputFiles[0].blob);
+      a.download = outputFiles[0].name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    } else {
+      // multiple files -> download each (browser will prompt)
+      for(const f of outputFiles){
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(f.blob);
+        a.download = f.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+        await new Promise(r=>setTimeout(r,120)); // small delay to avoid browser blocking
+      }
+    }
+
+    statusEl.textContent = 'Done.';
+  } catch(err){
+    console.error(err);
+    alert('Split failed: ' + (err && err.message ? err.message : err));
+    statusEl.textContent = 'Failed';
+  } finally {
+    setTimeout(()=>{ progress.style.display='none'; progressFill.style.width='0%'; }, 900);
+  }
+});
+
+clearBtn.addEventListener('click', ()=> {
+  if(confirm('Clear loaded file and UI?')){
+    reset();
+  }
+});
+
+function reset(){
+  fileInput.value = '';
+  resetUI();
+}
+
+function resetUI(){
+  currentFile = null; pdfDocLoaded = null; pageCount = 0;
+  metaEl.textContent = 'No file selected';
+  previewBtn.disabled=true; splitBtn.disabled=true;
+  pagesContainer.innerHTML = '';
+  statusEl.textContent = '';
+  progress.style.display = 'none'; progressFill.style.width = '0%';
+  rangeInput.value = '';
+}
+
+// keyboard enter submit support
+rangeInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter'){ e.preventDefault(); splitBtn.click(); } });
+
+</script>
+</body>
+</html>
