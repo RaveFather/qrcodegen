@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PDF Unlock — RF Online Tools</title>
+  <meta name="description" content="Remove editing/printing restrictions or unlock a PDF (with password) — all in your browser. Files never leave your device." />
+
+  <!-- ADSENSE (kept on every page) -->
+  <meta name="google-adsense-account" content="ca-pub-6776252433902731">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
+      crossorigin="anonymous"></script>
+
+  <!-- pdf-lib (for creating/saving PDFs) -->
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+  <!-- pdf.js for handling passworded files & rendering pages to canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  </script>
+
+  <style>
+    :root{
+      --bg:#0f0f0f; --card:rgba(255,255,255,0.04); --accent1:#00eaff; --accent2:#008cff; --muted:rgba(255,255,255,0.65);
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased}
+    .wrap{max-width:980px;margin:28px auto;padding:20px}
+    header{text-align:center;margin-bottom:8px}
+    h1{font-size:28px;margin:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;color:transparent}
+    p.lead{color:var(--muted);margin-top:8px}
+
+    .card{background:var(--card);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.05)}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .uploader{border:2px dashed rgba(255,255,255,0.06);padding:14px;border-radius:12px;text-align:center;cursor:pointer;flex:1;min-width:220px}
+    .uploader input{display:none}
+    .controls{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    button.btn{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#000;border:none;padding:10px 14px;border-radius:10px;font-weight:800;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer}
+    input[type="password"], input[type="text"]{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:8px;color:#fff;outline:none}
+    .status{color:var(--muted);margin-top:12px}
+    .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:6px;overflow:hidden;margin-top:10px}
+    .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width 0.18s}
+    .note{font-size:13px;color:var(--muted);margin-top:12px}
+    .small{font-size:13px;color:var(--muted)}
+    .hidden{display:none}
+    .inline{display:inline-flex;gap:8px;align-items:center}
+    canvas {max-width:100%;border-radius:6px;border:1px solid rgba(255,255,255,0.03);margin-top:8px}
+    @media (max-width:720px){ .row{flex-direction:column} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>PDF Unlock</h1>
+      <p class="lead">Remove editing/printing restrictions or unlock an encrypted PDF (you must provide the password). Files never leave your browser.</p>
+    </header>
+
+    <div class="card">
+      <div class="row">
+        <label class="uploader" id="uploader">
+          <input id="fileInput" type="file" accept="application/pdf">
+          <div><strong>Choose PDF (or drop)</strong><div class="small">If PDF is password-protected, you'll be asked for the password.</div></div>
+        </label>
+
+        <div style="min-width:220px">
+          <div style="font-weight:700;margin-bottom:8px">Options</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label class="inline"><input id="renderIfEncrypted" type="checkbox" checked> Create image-based PDF if passworded (recommended)</label>
+            <div class="small">Image-based output preserves visual layout for encrypted PDFs (larger files).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div id="passwordWrap" style="display:none" class="inline">
+          <input id="pdfPassword" type="password" placeholder="Enter PDF password if it requires one" />
+          <button id="submitPassword" class="btn">Submit</button>
+        </div>
+
+        <button id="unlockBtn" class="btn" disabled>Unlock PDF</button>
+        <button id="downloadBtn" class="btn hidden">Download Unlocked PDF</button>
+        <button id="clearBtn" class="ghost">Clear</button>
+      </div>
+
+      <div class="progress" id="progress" style="display:none"><i></i></div>
+      <div class="status" id="status">No file selected</div>
+
+      <div id="previewWrap" style="margin-top:12px"></div>
+
+      <div class="note">
+        Important: This tool will not attempt to bypass unknown passwords. If a PDF requires a password to open you must provide it. We never brute-force or crack passwords.
+      </div>
+    </div>
+
+    <footer style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center">
+      RF Online Tools • Ads keep the tools free • Files processed in your browser
+    </footer>
+  </div>
+
+<script>
+(async ()=>{
+
+const fileInput = document.getElementById('fileInput');
+const uploader = document.getElementById('uploader');
+const unlockBtn = document.getElementById('unlockBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const clearBtn = document.getElementById('clearBtn');
+const statusEl = document.getElementById('status');
+const progress = document.getElementById('progress');
+const progressFill = progress.querySelector('i');
+const passwordWrap = document.getElementById('passwordWrap');
+const pdfPasswordInput = document.getElementById('pdfPassword');
+const submitPassword = document.getElementById('submitPassword');
+const previewWrap = document.getElementById('previewWrap');
+const renderIfEncrypted = document.getElementById('renderIfEncrypted');
+
+let originalArrayBuffer = null;
+let unlockedBlob = null;
+let lastFileName = 'unlocked.pdf';
+let passwordNeeded = false;
+let lastPassword = null;
+
+// helpers
+function humanFileSize(bytes){
+  if(bytes<1024) return bytes+' B';
+  const i = Math.floor(Math.log(bytes)/Math.log(1024));
+  const sizes = ['B','KB','MB','GB','TB'];
+  return (bytes/Math.pow(1024,i)).toFixed(i>1?1:0) + ' ' + sizes[i];
+}
+function showStatus(t){ statusEl.textContent = t; }
+function setProgress(p){
+  progress.style.display = p>=0 ? '' : 'none';
+  progressFill.style.width = (p>=0?Math.min(100,Math.round(p)) : 0)+'%';
+}
+function resetUI(){
+  originalArrayBuffer = null; unlockedBlob=null; lastFileName='unlocked.pdf'; passwordNeeded=false; lastPassword=null;
+  unlockBtn.disabled = true; downloadBtn.classList.add('hidden');
+  passwordWrap.style.display = 'none'; pdfPasswordInput.value = '';
+  previewWrap.innerHTML = '';
+  showStatus('No file selected');
+  setProgress(-1);
+}
+
+resetUI();
+
+// drop / click
+uploader.addEventListener('click', ()=> fileInput.click());
+uploader.addEventListener('dragover', (e)=>{ e.preventDefault(); uploader.style.opacity=0.8; });
+uploader.addEventListener('dragleave', (e)=>{ e.preventDefault(); uploader.style.opacity=1; });
+uploader.addEventListener('drop', async (e)=>{ e.preventDefault(); uploader.style.opacity=1; const f = e.dataTransfer.files[0]; if(f) await handleFile(f); });
+
+fileInput.addEventListener('change', async ()=>{
+  const f = fileInput.files[0];
+  if(!f) return;
+  await handleFile(f);
+});
+
+async function handleFile(file){
+  resetUI();
+  showStatus(`Loading ${file.name} — ${humanFileSize(file.size)}...`);
+  lastFileName = file.name.replace(/\.pdf$/i,'') + '-unlocked.pdf';
+  try{
+    originalArrayBuffer = await file.arrayBuffer();
+    // quick attempt: try to load with pdf-lib (works if not encrypted)
+    try {
+      setProgress(5);
+      await PDFLib.PDFDocument.load(originalArrayBuffer);
+      // success -> not encrypted
+      passwordNeeded = false;
+      showStatus(`Loaded: ${file.name} — appears NOT password-protected. Ready to unlock (remove restrictions).`);
+      unlockBtn.disabled = false;
+      previewWrap.innerHTML = `<div class="small">No password detected. Unlock will re-save PDF without restrictions.</div>`;
+      return;
+    } catch(e){
+      // pdf-lib couldn't load; might be encrypted
+      passwordNeeded = true;
+      showStatus(`PDF may be password protected or encrypted. Enter password, or choose to render pages to unlock (image-based).`);
+      passwordWrap.style.display = '';
+      unlockBtn.disabled = false; // allow unlocking after password provided or render-based
+      previewWrap.innerHTML = `<div class="small">If you know the password, enter it and press Submit. Otherwise, check "Create image-based PDF..." and press Unlock.</div>`;
+      return;
+    }
+  } catch(err){
+    console.error(err);
+    alert('Failed to read file: ' + (err && err.message ? err.message : err));
+    resetUI();
+  }
+}
+
+// password submit (user provided)
+submitPassword.addEventListener('click', async ()=>{
+  lastPassword = pdfPasswordInput.value || null;
+  if(!lastPassword) return alert('Type the password the PDF asks for.');
+  // try to open with pdf.js using password
+  try{
+    await tryOpenWithPdfJs(originalArrayBuffer, lastPassword);
+    showStatus('Password accepted. You can now unlock the PDF (image-based process will run).');
+    // enable unlock button (it already is)
+  } catch(err){
+    alert('Password failed or PDF cannot be opened: ' + (err && err.message ? err.message : err));
+  }
+});
+
+// core unlock flow
+unlockBtn.addEventListener('click', async ()=>{
+  if(!originalArrayBuffer) return alert('Load a PDF first.');
+  unlockBtn.disabled = true;
+  setProgress(2);
+  showStatus('Starting unlock process...');
+
+  try {
+    // First try: attempt lossless re-save using pdf-lib (works if not encrypted)
+    try {
+      const originalPdf = await PDFLib.PDFDocument.load(originalArrayBuffer, { ignoreEncryption: false });
+      // If load succeeded without throwing, create a new doc & copy pages (this removes owner restrictions)
+      setProgress(15);
+      const newPdf = await PDFLib.PDFDocument.create();
+      const pages = await newPdf.copyPages(originalPdf, originalPdf.getPageIndices());
+      pages.forEach(p => newPdf.addPage(p));
+      const bytes = await newPdf.save();
+      unlockedBlob = new Blob([bytes], { type: 'application/pdf' });
+      downloadBtn.classList.remove('hidden');
+      showStatus('Unlocked (restrictions removed). Download ready.');
+      setProgress(100);
+      renderPreviewFromBlob(unlockedBlob);
+      unlockBtn.disabled = false;
+      return;
+    } catch(e) {
+      // likely encrypted / pdf-lib couldn't load — fallthrough to password/render approach
+      console.warn('pdf-lib load failed (likely encrypted):', e);
+      if(passwordNeeded && !pdfPasswordInput.value && !renderIfEncrypted.checked){
+        unlockBtn.disabled = false;
+        alert('PDF seems encrypted — enter the password or enable image-based unlock in options.');
+        return;
+      }
+      // If user provided password, attempt to open using pdf.js and render
+      const pw = pdfPasswordInput.value || null;
+      // try opening with pdf.js
+      try {
+        await tryOpenWithPdfJs(originalArrayBuffer, pw);
+      } catch(err){
+        if(!renderIfEncrypted.checked){
+          unlockBtn.disabled = false;
+          throw new Error('Cannot open PDF with provided password. Enable image-based rendering option to attempt unlocking without password.');
+        }
+        // else continue — we will try rendering with pdf.js; it may prompt for pw during getDocument.
+      }
+    }
+
+    // At this point we need to re-create the PDF by rendering pages to canvases (image-based PDF).
+    showStatus('Rendering pages (this may take a while) — creating image-based unlocked PDF...');
+    setProgress(5);
+
+    const pdf = await pdfjsLib.getDocument({ data: originalArrayBuffer, password: pdfPasswordInput.value || undefined }).promise;
+    const total = pdf.numPages;
+    const outPdf = await PDFLib.PDFDocument.create();
+
+    for(let i=1;i<=total;i++){
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 1.5 }); // scale of rendering (adjust if you want smaller/larger)
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      const ctx = canvas.getContext('2d');
+
+      const renderContext = { canvasContext: ctx, viewport: viewport };
+      await page.render(renderContext).promise;
+
+      // convert canvas to PNG bytes
+      const dataUrl = canvas.toDataURL('image/png');
+      const pngBytes = dataURLToUint8Array(dataUrl);
+
+      // embed image into new pdf page
+      let image;
+      try {
+        image = await outPdf.embedPng(pngBytes);
+      } catch(err){
+        console.warn('embedPng failed, trying embedJpg fallback', err);
+        image = await outPdf.embedJpg(pngBytes);
+      }
+      const { width, height } = image.scale(1);
+      const pageNew = outPdf.addPage([width, height]);
+      pageNew.drawImage(image, { x: 0, y: 0, width, height });
+
+      setProgress(Math.round((i/total)*100));
+      showStatus(`Rendering page ${i}/${total}...`);
+      // small yield for UI update
+      await new Promise(r=>setTimeout(r,40));
+    }
+
+    const outBytes = await outPdf.save();
+    unlockedBlob = new Blob([outBytes], { type: 'application/pdf' });
+    downloadBtn.classList.remove('hidden');
+    showStatus('Image-based unlocked PDF ready. Download below.');
+    setProgress(100);
+    renderPreviewFromBlob(unlockedBlob);
+
+  } catch(err){
+    console.error(err);
+    alert('Unlock failed: ' + (err && err.message ? err.message : err));
+    showStatus('Unlock failed.');
+    setProgress(-1);
+  } finally {
+    unlockBtn.disabled = false;
+  }
+});
+
+// download
+downloadBtn.addEventListener('click', ()=>{
+  if(!unlockedBlob) return alert('No unlocked file available.');
+  const a = document.createElement('a');
+  const url = URL.createObjectURL(unlockedBlob);
+  a.href = url;
+  a.download = lastFileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// clear
+clearBtn.addEventListener('click', ()=> { if(confirm('Clear file and UI?')) resetUI(); });
+
+// try opening with pdf.js (checks password validity)
+async function tryOpenWithPdfJs(arrayBuffer, password){
+  try {
+    await pdfjsLib.getDocument({ data: arrayBuffer, password: password || undefined }).promise;
+    return true;
+  } catch(err){
+    // pdf.js throws typed errors with name 'PasswordException' sometimes; surface message
+    throw err;
+  }
+}
+
+// helper to render a preview thumbnail and show basic info
+function renderPreviewFromBlob(blob){
+  previewWrap.innerHTML = '';
+  const url = URL.createObjectURL(blob);
+  const info = document.createElement('div');
+  info.className = 'small';
+  info.textContent = `Preview (download size: ${humanFileSize(blob.size)}).`;
+  previewWrap.appendChild(info);
+
+  // embed first page thumbnail using pdf.js
+  (async ()=>{
+    try {
+      const arrayBuffer = await blob.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 1.0 });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      previewWrap.appendChild(canvas);
+    } catch(e){
+      // ignore preview errors
+    }
+  })();
+}
+
+// tiny util: convert dataURL -> Uint8Array
+function dataURLToUint8Array(dataURL){
+  const parts = dataURL.split(',');
+  const byteString = atob(parts[1]);
+  const ia = new Uint8Array(byteString.length);
+  for(let i=0;i<byteString.length;i++) ia[i]=byteString.charCodeAt(i);
+  return ia;
+}
+
+})(); // IIFE
+</script>
+</body>
+</html>
