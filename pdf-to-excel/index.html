@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PDF → Excel — RF Online Tools</title>
+  <meta name="description" content="Convert PDF tables into Excel (XLSX/CSV) in your browser. Fast, private — files never leave your device." />
+
+  <!-- ADSENSE (kept on every page) -->
+  <meta name="google-adsense-account" content="ca-pub-6776252433902731">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
+      crossorigin="anonymous"></script>
+
+  <!-- pdf.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>pdfjsLib = window['pdfjs-dist/build/pdf']; pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+
+  <!-- SheetJS (XLSX) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f0f0f; --card:rgba(255,255,255,0.04); --accent1:#00eaff; --accent2:#008cff; --muted:rgba(255,255,255,0.65);
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased;}
+    .wrap{max-width:980px;margin:28px auto;padding:20px}
+    header{text-align:center;margin-bottom:10px}
+    h1{font-size:28px;margin:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;color:transparent}
+    p.lead{color:var(--muted);margin-top:8px}
+
+    .card{background:var(--card);padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.05)}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .uploader{border:2px dashed rgba(255,255,255,0.06);padding:14px;border-radius:12px;text-align:center;cursor:pointer;flex:1;min-width:220px}
+    .uploader input{display:none}
+    .controls{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+    button.btn{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#000;border:none;padding:10px 14px;border-radius:10px;font-weight:800;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer}
+    select,input{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:8px;color:#fff;outline:none}
+    .status{color:var(--muted);margin-top:12px}
+    .progress{height:8px;background:rgba(255,255,255,0.03);border-radius:6px;overflow:hidden;margin-top:10px}
+    .progress > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width 0.18s}
+    .note{font-size:13px;color:var(--muted);margin-top:12px}
+    .option-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    pre.debug{white-space:pre-wrap;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;color:var(--muted);font-size:13px;max-height:220px;overflow:auto}
+    @media (max-width:720px){ .row{flex-direction:column} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>PDF → Excel</h1>
+      <p class="lead">Extract tables from PDF and download as XLSX or CSV — all in your browser. Good for most text-based PDFs (not OCR).</p>
+    </header>
+
+    <div class="card">
+      <div class="row">
+        <label class="uploader" id="uploader">
+          <input id="fileInput" type="file" accept="application/pdf">
+          <div><strong>Drop PDF here or click to choose</strong><div style="font-size:13px;color:var(--muted);margin-top:6px">Recommended: text-based PDFs (not scanned). Max ~150MB per file.</div></div>
+        </label>
+
+        <div style="min-width:220px">
+          <div style="font-weight:700;margin-bottom:8px">Mode</div>
+          <select id="mode">
+            <option value="table">Table detection (best)</option>
+            <option value="raw">Raw text → single column</option>
+          </select>
+          <div style="margin-top:10px">
+            <label style="font-size:13px;color:var(--muted)">Delimiter (table mode)</label>
+            <select id="delim">
+              <option value="auto">Auto (detect columns by gaps)</option>
+              <option value=",">Comma (,)</option>
+              <option value="tab">Tab</option>
+              <option value="pipe">Pipe (|)</option>
+              <option value="space">Space (split on 2+ spaces)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="extractBtn" class="btn" disabled>Extract → Preview</button>
+        <button id="downloadXlsxBtn" class="btn" disabled>Download XLSX</button>
+        <button id="downloadCsvBtn" class="ghost" disabled>Download CSV</button>
+        <button id="clearBtn" class="ghost">Clear</button>
+        <div style="flex:1"></div>
+        <div style="font-size:13px;color:var(--muted)">Pages to extract:
+          <input id="pageInput" type="text" placeholder="e.g. 1-3 or 1,3 or leave blank for all" style="width:170px;margin-left:8px" />
+        </div>
+      </div>
+
+      <div class="progress" id="progress" style="display:none"><i></i></div>
+      <div class="status" id="status">No file selected</div>
+
+      <div id="preview" style="margin-top:12px"></div>
+
+      <div class="note">
+        Note: This extracts text from the PDF — if your PDF is scanned images, you’ll need OCR (not supported here). Complex tables might need manual cleanup. Try "Raw text" mode if table detection misses columns.
+      </div>
+    </div>
+
+    <footer style="margin-top:16px;color:var(--muted);font-size:13px;text-align:center">
+      RF Online Tools • We run ads to keep the tools free.
+    </footer>
+  </div>
+
+<script>
+/* PDF → Excel (browser-based)
+   Heuristic:
+   - Use pdf.js to get textContent.items with transforms (x,y)
+   - Group items by Y (rounded) to build lines
+   - For each line, split into columns by delimiter heuristics:
+       * if delim=auto: split by big gaps between consecutive items (x distance)
+       * else use chosen delimiter (comma/tab/pipe/2+ spaces)
+   - Build array of rows, then sheet via XLSX
+*/
+
+const MAX_BYTES = 180 * 1024 * 1024; // 180MB soft
+const fileInput = document.getElementById('fileInput');
+const uploader = document.getElementById('uploader');
+const extractBtn = document.getElementById('extractBtn');
+const clearBtn = document.getElementById('clearBtn');
+const downloadXlsxBtn = document.getElementById('downloadXlsxBtn');
+const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+const statusEl = document.getElementById('status');
+const progress = document.getElementById('progress');
+const progressFill = progress.querySelector('i');
+const preview = document.getElementById('preview');
+const modeSelect = document.getElementById('mode');
+const delimSelect = document.getElementById('delim');
+const pageInput = document.getElementById('pageInput');
+
+let pdfDoc = null;
+let extractedData = []; // array of arrays (rows)
+let extractedPreviewText = '';
+
+function humanFileSize(bytes){
+  if(bytes<1024) return bytes + ' B';
+  const i = Math.floor(Math.log(bytes)/Math.log(1024));
+  const sizes = ['B','KB','MB','GB','TB'];
+  return (bytes/Math.pow(1024,i)).toFixed( (i>1)?1:0 ) + ' ' + sizes[i];
+}
+
+uploader.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', async ()=>{
+  const f = fileInput.files[0];
+  if(!f) return;
+  if(f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
+    alert('Please select a PDF file.');
+    fileInput.value = '';
+    return;
+  }
+  if(f.size > MAX_BYTES){
+    if(!confirm(`File is large (${humanFileSize(f.size)}). This may be slow or crash on low-memory devices. Continue?`)) {
+      fileInput.value = '';
+      return;
+    }
+  }
+  await loadPdf(f);
+});
+
+clearBtn.addEventListener('click', ()=>{
+  fileInput.value = '';
+  pdfDoc = null;
+  extractedData = [];
+  preview.innerHTML = '';
+  statusEl.textContent = 'No file selected';
+  extractBtn.disabled = true;
+  downloadXlsxBtn.disabled = true;
+  downloadCsvBtn.disabled = true;
+  progress.style.display = 'none';
+  progressFill.style.width = '0%';
+  pageInput.value = '';
+});
+
+async function loadPdf(file){
+  pdfDoc = null;
+  extractedData = [];
+  preview.innerHTML = '';
+  statusEl.textContent = `Loading ${file.name} — ${humanFileSize(file.size)}...`;
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
+    pdfDoc = await loadingTask.promise;
+    statusEl.textContent = `${file.name} — ${pdfDoc.numPages} page(s) loaded.`;
+    extractBtn.disabled = false;
+  } catch(err){
+    console.error(err);
+    alert('Failed to load PDF: ' + (err && err.message ? err.message : err));
+    statusEl.textContent = 'Load failed';
+  }
+}
+
+function parsePageRanges(input, max) {
+  if(!input) return Array.from({length:max}, (_,i)=>i+1);
+  input = input.replace(/\s+/g,'');
+  const parts = input.split(',');
+  const pages = new Set();
+  for(const p of parts){
+    if(p.includes('-')){
+      const [a,b] = p.split('-').map(n=>parseInt(n,10));
+      if(!isNaN(a) && !isNaN(b)){
+        const s = Math.max(1,Math.min(a,b));
+        const e = Math.min(max,Math.max(a,b));
+        for(let i=s;i<=e;i++) pages.add(i);
+      }
+    } else {
+      const n = parseInt(p,10);
+      if(!isNaN(n) && n>=1 && n<=max) pages.add(n);
+    }
+  }
+  return Array.from(pages).sort((a,b)=>a-b);
+}
+
+function roundY(y){ // rounding helper for grouping lines
+  return Math.round(y*10)/10; // reduce sensitivity
+}
+
+async function extract() {
+  if(!pdfDoc) return alert('Load a PDF first.');
+  extractedData = [];
+  preview.innerHTML = '';
+  downloadXlsxBtn.disabled = true;
+  downloadCsvBtn.disabled = true;
+
+  const pagesToDo = parsePageRanges(pageInput.value, pdfDoc.numPages);
+  statusEl.textContent = `Extracting ${pagesToDo.length} page(s)...`;
+  progress.style.display = 'block';
+  progressFill.style.width = '2%';
+
+  for(let pi=0; pi<pagesToDo.length; pi++){
+    const pnum = pagesToDo[pi];
+    try{
+      const page = await pdfDoc.getPage(pnum);
+      const textContent = await page.getTextContent();
+      // textContent.items -> {str, transform, width, height, dir, fontName}
+      // transform ~ [a,b,c,d,e,f] where e = x, f = y (in pdf.js)
+      const items = textContent.items.map(it => {
+        const transform = it.transform || it?.transform || [];
+        const x = transform[4] || 0;
+        const y = transform[5] || 0;
+        return {str: it.str, x, y, width: it.width || 0};
+      });
+
+      // group by rounded y -> lines
+      const linesMap = new Map();
+      for(const it of items){
+        const ry = roundY(it.y);
+        if(!linesMap.has(ry)) linesMap.set(ry, []);
+        linesMap.get(ry).push(it);
+      }
+
+      // sort lines from top to bottom (y decreases top->bottom in PDF coords)
+      const sortedYs = Array.from(linesMap.keys()).sort((a,b)=>b-a);
+      for(const ry of sortedYs){
+        const rowItems = linesMap.get(ry).sort((a,b)=>a.x - b.x);
+        // Build line text and also keep x positions
+        const line = rowItems.map(it => ({text: it.str.trim(), x: it.x, width: it.width}));
+        // convert into columns depending on mode
+        const mode = modeSelect.value;
+        let cols = [];
+        if(mode === 'raw'){
+          // raw: put entire concatenated line into single column
+          cols = [ line.map(l=>l.text).join(' ').replace(/\s+/g,' ').trim() ];
+        } else {
+          // table mode: split heuristically
+          const delim = delimSelect.value;
+          if(delim === 'auto' || delim === 'space') {
+            // try split by big x gaps between adjacent items
+            const gaps = [];
+            for(let i=0;i<line.length-1;i++){
+              gaps.push(line[i+1].x - (line[i].x + Math.max(18,line[i].width*0.6)));
+            }
+            // find gap threshold: gaps significantly larger than median
+            const sortedGaps = [...gaps].sort((a,b)=>a-b);
+            const medianGap = sortedGaps.length ? sortedGaps[Math.floor(sortedGaps.length/2)] : 0;
+            const thresh = Math.max(18, medianGap * 1.8);
+            // build columns by splitting where gap > thresh
+            let col = '';
+            let colsTemp = [];
+            for(let i=0;i<line.length;i++){
+              col += (col ? ' ' : '') + line[i].text;
+              if(i < line.length-1){
+                const gap = (line[i+1].x - (line[i].x + Math.max(18,line[i].width*0.6)));
+                if(gap > thresh){
+                  colsTemp.push(col.trim());
+                  col = '';
+                }
+              }
+            }
+            if(col) colsTemp.push(col.trim());
+            if(delim === 'space') {
+              // further split items that contain 2+ spaces
+              cols = colsTemp.flatMap(c => c.split(/\s{2,}/).map(s=>s.trim()).filter(Boolean));
+            } else {
+              cols = colsTemp;
+            }
+          } else if(delim === ',') {
+            cols = [ rowItems.map(r=>r.text).join(' ') ].join(',').split(',').map(s=>s.trim());
+          } else if(delim === 'tab') {
+            cols = [ rowItems.map(r=>r.text).join(' ') ].join('\t').split('\t').map(s=>s.trim());
+          } else if(delim === 'pipe') {
+            cols = [ rowItems.map(r=>r.text).join(' ') ].join('|').split('|').map(s=>s.trim());
+          } else {
+            cols = [ rowItems.map(r=>r.text).join(' ').trim() ];
+          }
+        }
+
+        // push row if not empty
+        const isEmpty = cols.every(c => !c || c.trim()==='');
+        if(!isEmpty) extractedData.push(cols);
+      }
+    } catch(err){
+      console.error('Page', pnum, err);
+      // continue
+    }
+
+    // progress
+    const pct = Math.round(((pi+1)/pagesToDo.length)*100);
+    progressFill.style.width = pct + '%';
+    statusEl.textContent = `Extracting pages... (${pi+1}/${pagesToDo.length})`;
+    await new Promise(r=>setTimeout(r,80));
+  }
+
+  progress.style.display = 'none';
+  progressFill.style.width = '0%';
+  statusEl.textContent = `Extraction complete — ${extractedData.length} rows found (preview below).`;
+  downloadXlsxBtn.disabled = false;
+  downloadCsvBtn.disabled = false;
+  renderedPreview();
+}
+
+function renderedPreview(){
+  preview.innerHTML = '';
+  if(!extractedData || extractedData.length === 0){
+    preview.innerHTML = '<div style="color:var(--muted)">No data extracted. Try "Raw text" mode or different delimiter.</div>';
+    return;
+  }
+  // show first 6 rows as table
+  const max = Math.min(8, extractedData.length);
+  const table = document.createElement('table');
+  table.style.width = '100%';
+  table.style.borderCollapse = 'collapse';
+  table.style.marginTop = '12px';
+  const tbody = document.createElement('tbody');
+  for(let i=0;i<max;i++){
+    const row = document.createElement('tr');
+    const cols = extractedData[i];
+    for(let c=0;c<cols.length;c++){
+      const td = document.createElement(i===0 ? 'th' : 'td');
+      td.style.border = '1px solid rgba(255,255,255,0.04)';
+      td.style.padding = '6px 8px';
+      td.style.textAlign = 'left';
+      td.style.fontSize = '13px';
+      td.textContent = cols[c] || '';
+      row.appendChild(td);
+    }
+    tbody.appendChild(row);
+  }
+  table.appendChild(tbody);
+  preview.appendChild(table);
+
+  // show raw debug text snippet
+  const info = document.createElement('div');
+  info.style.marginTop = '8px';
+  info.style.color = 'var(--muted)';
+  info.textContent = `Showing first ${max} rows — ${extractedData.length} total rows extracted.`;
+  preview.appendChild(info);
+}
+
+extractBtn.addEventListener('click', async ()=>{
+  if(!pdfDoc) return alert('Load a PDF first.');
+  extractBtn.disabled = true;
+  await extract();
+  extractBtn.disabled = false;
+});
+
+downloadXlsxBtn.addEventListener('click', ()=>{
+  if(!extractedData || extractedData.length === 0) return alert('Nothing to download — extract first.');
+  // normalize rows: make jagged rows into rectangular by filling empty cells
+  const maxCols = Math.max(...extractedData.map(r=>r.length));
+  const aoa = extractedData.map(r=>{
+    const out = [];
+    for(let i=0;i<maxCols;i++) out.push(r[i]||'');
+    return out;
+  });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  const now = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  XLSX.writeFile(wb, `pdf-extract-${now}.xlsx`);
+});
+
+downloadCsvBtn.addEventListener('click', ()=>{
+  if(!extractedData || extractedData.length === 0) return alert('Nothing to download — extract first.');
+  const maxCols = Math.max(...extractedData.map(r=>r.length));
+  const rows = extractedData.map(r => {
+    const cells = [];
+    for(let i=0;i<maxCols;i++){
+      const v = (r[i]||'').replace(/"/g,'""');
+      cells.push(`"${v}"`);
+    }
+    return cells.join(',');
+  });
+  const csv = rows.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pdf-extract-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// initial UI state
+extractBtn.disabled = true;
+downloadXlsxBtn.disabled = true;
+downloadCsvBtn.disabled = true;
+
+</script>
+</body>
+</html>
