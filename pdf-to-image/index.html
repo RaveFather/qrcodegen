@@ -1,179 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image → PDF Converter</title>
+  <meta charset="UTF-8" />
+  <title>PDF to Image – Lossless</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- ADSENSE -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
-        crossorigin="anonymous"></script>
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-    <!-- JS PDF LIB -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- ADSENSE -->
+  <script async
+    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6776252433902731"
+    crossorigin="anonymous"></script>
 
-    <style>
-        body {
-            margin: 0;
-            background: #0f0f0f;
-            font-family: "Inter", sans-serif;
-            color: white;
-            display: flex;
-            justify-content: center;
-            padding: 40px 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 650px;
-            background: rgba(255,255,255,0.05);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.08);
-            animation: fadeIn 1s ease;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 2.4rem;
-            background: linear-gradient(90deg, #00eaff, #008cff);
-            -webkit-background-clip: text;
-            color: transparent;
-            margin-bottom: 15px;
-        }
-
-        p.subtitle {
-            text-align: center;
-            opacity: 0.7;
-            margin-bottom: 30px;
-        }
-
-        .upload-box {
-            border: 2px dashed rgba(255, 255, 255, 0.3);
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .upload-box:hover {
-            border-color: #00eaff;
-            background: rgba(255,255,255,0.07);
-        }
-
-        input {
-            display: none;
-        }
-
-        #preview {
-            margin-top: 25px;
-            display: grid;
-            gap: 15px;
-        }
-
-        #preview img {
-            width: 100%;
-            border-radius: 10px;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            margin-top: 30px;
-            font-size: 1.2rem;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(90deg, #00eaff, #008cff);
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.25s;
-        }
-
-        button:hover {
-            transform: translateY(-3px);
-            opacity: 0.9;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<div class="container">
-    <h1>Image → PDF</h1>
-    <p class="subtitle">Upload JPG or PNG images and convert them into a single PDF file.</p>
+  <div class="container">
+    <h1>PDF → Image (Lossless)</h1>
 
-    <label class="upload-box" for="imageInput">
-        <strong>Click to upload images</strong><br>
-        (You can select multiple)
-    </label>
-    <input type="file" id="imageInput" accept="image/*" multiple>
+    <input type="file" id="pdfInput" accept="application/pdf" />
 
-    <div id="preview"></div>
+    <button id="convertBtn">Convert to Images</button>
 
-    <button onclick="convertToPDF()">Convert to PDF</button>
-</div>
+    <div id="output"></div>
+  </div>
 
-<script>
-    const { jsPDF } = window.jspdf;
-
-    let imageFiles = [];
-
-    document.getElementById("imageInput").addEventListener("change", function (e) {
-        imageFiles = [...e.target.files];
-        const preview = document.getElementById("preview");
-        preview.innerHTML = "";
-
-        imageFiles.forEach(file => {
-            const img = document.createElement("img");
-            img.src = URL.createObjectURL(file);
-            preview.appendChild(img);
-        });
-    });
-
-    async function convertToPDF() {
-        if (imageFiles.length === 0) return alert("Please upload at least one image.");
-
-        const pdf = new jsPDF({ unit: "px", format: "a4" });
-
-        for (let i = 0; i < imageFiles.length; i++) {
-            const file = imageFiles[i];
-
-            const imgData = await readImage(file);
-
-            const img = new Image();
-            img.src = imgData;
-
-            await new Promise(res => img.onload = res);
-
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-
-            const ratio = Math.min(pageWidth / img.width, pageHeight / img.height);
-            const width = img.width * ratio;
-            const height = img.height * ratio;
-
-            if (i !== 0) pdf.addPage();
-            pdf.addImage(img, "JPEG", (pageWidth - width)/2, 20, width, height);
-        }
-
-        pdf.save("converted.pdf");
-    }
-
-    function readImage(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = e => resolve(e.target.result);
-            reader.readAsDataURL(file);
-        });
-    }
-</script>
-
+  <script src="script.js"></script>
 </body>
 </html>
