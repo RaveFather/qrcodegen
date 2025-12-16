@@ -1,169 +1,54 @@
-// PDF -> Image converter using pdf.js + JSZip
-const fileInput = document.getElementById('fileInput');
-const convertBtn = document.getElementById('convertBtn');
-const statusEl = document.getElementById('status');
-const preview = document.getElementById('preview');
-const downloadAllBtn = document.getElementById('downloadAllBtn');
-const formatSelect = document.getElementById('format');
-const qualityRange = document.getElementById('quality');
-const qualityLabel = document.getElementById('qualityLabel');
+const pdfInput = document.getElementById("pdfInput");
+const convertBtn = document.getElementById("convertBtn");
+const output = document.getElementById("output");
 
-let pdfDoc = null;
-let pagesImages = []; // {pageNum, blob, name}
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-// enable/disable quality control depending on format
-function updateQualityControl(){
-  if(formatSelect.value === 'jpeg'){
-    qualityRange.style.display = 'inline-block';
-    qualityLabel.style.display = 'inline-block';
-  } else {
-    qualityRange.style.display = 'none';
-    qualityLabel.style.display = 'none';
-  }
-}
-formatSelect.addEventListener('change', updateQualityControl);
-updateQualityControl();
+convertBtn.addEventListener("click", async () => {
+  output.innerHTML = "";
 
-// file selected
-fileInput.addEventListener('change', () => {
-  convertBtn.disabled = !fileInput.files.length;
-  statusEl.textContent = fileInput.files.length ? '' : 'Choose a PDF file to convert.';
-});
-
-// main convert action
-convertBtn.addEventListener('click', async () => {
-  if(!fileInput.files.length) return;
-  const file = fileInput.files[0];
-
-  // small safety cap: avoid huge PDFs on low-memory devices
-  if(file.size > 150 * 1024 * 1024){
-    if(!confirm('This file is large (>150MB) and may be slow or fail in low-memory devices. Continue?')) return;
-  }
-
-  convertBtn.disabled = true;
-  preview.innerHTML = '';
-  pagesImages = [];
-  downloadAllBtn.style.display = 'none';
-  statusEl.textContent = 'Loading PDF…';
-
-  // read file
-  const arrayBuffer = await file.arrayBuffer();
-
-  // pdf.js setup
-  const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
-  loadingTask.onProgress = (p) => {
-    statusEl.textContent = `Loading PDF… ${Math.round(p.loaded / p.total * 100)}%`;
-  };
-
-  try {
-    pdfDoc = await loadingTask.promise;
-  } catch(err) {
-    console.error(err);
-    statusEl.textContent = 'Error loading PDF.';
-    convertBtn.disabled = false;
+  if (!pdfInput.files.length) {
+    alert("Upload a PDF first.");
     return;
   }
 
-  statusEl.textContent = `PDF loaded — ${pdfDoc.numPages} page(s). Rendering pages…`;
-  // render each page sequentially (keeps memory lower)
-  for(let p=1;p<=pdfDoc.numPages;p++){
-    statusEl.textContent = `Rendering page ${p} / ${pdfDoc.numPages}…`;
-    const page = await pdfDoc.getPage(p);
+  const file = pdfInput.files[0];
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-    // viewport scale - choose px width roughly 1200 for good quality
-    const viewport = page.getViewport({scale: 1});
-    const targetWidth = 1200;
-    const scale = targetWidth / viewport.width;
-    const scaledViewport = page.getViewport({scale});
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
 
-    // canvas
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    canvas.width = Math.round(scaledViewport.width);
-    canvas.height = Math.round(scaledViewport.height);
+    // HIGH SCALE = LOSSLESS QUALITY
+    const scale = 4;
+    const viewport = page.getViewport({ scale });
 
-    // render
-    await page.render({canvasContext: context, viewport: scaledViewport}).promise;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-    // convert to blob
-    const format = formatSelect.value === 'jpeg' ? 'image/jpeg' : 'image/png';
-    const quality = parseFloat(qualityRange.value) || 0.9;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
 
-    // toBlob may be async — wrap in Promise
-    const blob = await new Promise(resolve => {
-      if(format === 'image/png'){
-        canvas.toBlob(resolve, format);
-      } else {
-        canvas.toBlob(resolve, format, quality);
-      }
-    });
+    await page.render({
+      canvasContext: ctx,
+      viewport: viewport
+    }).promise;
 
-    const nameExt = (format === 'image/png') ? 'png' : 'jpg';
-    const filename = `${file.name.replace(/\.pdf$/i,'')}_page-${String(p).padStart(3,'0')}.${nameExt}`;
+    const img = document.createElement("img");
+    img.src = canvas.toDataURL("image/png"); // LOSSLESS PNG
+    img.alt = `Page ${pageNum}`;
 
-    pagesImages.push({pageNum: p, blob, name: filename, width: canvas.width, height: canvas.height});
+    const download = document.createElement("a");
+    download.href = img.src;
+    download.download = `page-${pageNum}.png`;
+    download.textContent = `Download Page ${pageNum}`;
 
-    // show preview card
-    const card = document.createElement('div');
-    card.className = 'page';
-    const thumb = document.createElement('canvas');
-    // create thumbnail copy scaled down for preview
-    const thumbCtx = thumb.getContext('2d');
-    const thumbMaxW = 360;
-    const thumbScale = Math.min(thumbMaxW / canvas.width, 1);
-    thumb.width = Math.round(canvas.width * thumbScale);
-    thumb.height = Math.round(canvas.height * thumbScale);
-    thumbCtx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, thumb.width, thumb.height);
-    card.appendChild(thumb);
+    const wrapper = document.createElement("div");
+    wrapper.className = "image-block";
+    wrapper.appendChild(img);
+    wrapper.appendChild(download);
 
-    const info = document.createElement('small');
-    info.textContent = `Page ${p} — ${thumb.width}×${thumb.height}`;
-    card.appendChild(info);
-
-    const actions = document.createElement('div');
-    actions.className = 'actions';
-
-    // single download
-    const dl = document.createElement('button');
-    dl.textContent = 'Download';
-    dl.addEventListener('click', () => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-    actions.appendChild(dl);
-
-    card.appendChild(actions);
-    preview.appendChild(card);
-  } // end pages loop
-
-  statusEl.textContent = `Done — ${pagesImages.length} images ready`;
-  if(pagesImages.length) downloadAllBtn.style.display = 'inline-block';
-  convertBtn.disabled = false;
-});
-
-// Download all as zip
-downloadAllBtn.addEventListener('click', async () => {
-  if(!pagesImages.length) return;
-  downloadAllBtn.disabled = true;
-  downloadAllBtn.textContent = 'Preparing ZIP…';
-  const zip = new JSZip();
-  for(const p of pagesImages){
-    zip.file(p.name, p.blob);
+    output.appendChild(wrapper);
   }
-  const content = await zip.generateAsync({type:'blob'}, (meta) => {
-    statusEl.textContent = `Zipping… ${Math.round(meta.percent)}%`;
-  });
-  const url = URL.createObjectURL(content);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${(fileInput.files[0]?.name || 'document').replace(/\.pdf$/i,'')}_images.zip`;
-  a.click();
-  URL.revokeObjectURL(url);
-  downloadAllBtn.disabled = false;
-  downloadAllBtn.textContent = 'Download All as ZIP';
-  statusEl.textContent = 'ZIP ready and downloaded.';
 });
